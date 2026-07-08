@@ -1,0 +1,10 @@
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+case: exovolc_tambora_k35d
+subpath_timeseries: aod/aod_0p550um_mie.csv
+subpath_zonal: aod/aod_zonal_0p550um_mie.csv
+outfile: fig_aod_twopanel.pdf
+
+# t=0 (days_since_start = 0) maps to this calendar date.
+eruption_date: 1815-04-01
+# Calendar x-axis range [start, end]; major ticks each year, minor each month.
+xlim: [1814-01-01, 1820-01-01]
