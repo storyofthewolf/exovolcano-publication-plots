@@ -58,6 +58,19 @@ zon_aod   = zon.values.astype(float)          # shape (n_times, n_lats)
 # Calendar x-axis range and tick configuration (shared by both panels).
 xlim = (pd.Timestamp(cfg['xlim'][0]), pd.Timestamp(cfg['xlim'][1]))
 
+# Pad the zonal grid with 0.0 out to the axis limits so the contour fills the
+# pre-eruption (and any post-data) span with zeros instead of leaving it blank.
+pad_dates = [d for d in (xlim[0], xlim[1])
+             if d < zon_dates.min() or d > zon_dates.max()]
+if pad_dates:
+    pad_dates = np.array(pad_dates, dtype='datetime64[ns]')
+    pad_rows  = np.zeros((len(pad_dates), zon_aod.shape[1]))
+    all_dates = np.concatenate([zon_dates.values, pad_dates])
+    all_aod   = np.concatenate([zon_aod, pad_rows], axis=0)
+    order     = np.argsort(all_dates)
+    zon_dates = pd.DatetimeIndex(all_dates[order])
+    zon_aod   = all_aod[order]
+
 print(f"case = {case}")
 print(f"  time-series peak AOD = {ts_aod.max():.4f}")
 print(f"  zonal peak AOD       = {zon_aod.max():.4f}")
