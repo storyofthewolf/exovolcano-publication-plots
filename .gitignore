@@ -1,4 +1,7 @@
 __pycache__/
 *.pyc
 *.py~
+*.yaml~
 *.pdf
+*.eps
+.DS_Store

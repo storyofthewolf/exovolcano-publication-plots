@@ -22,25 +22,56 @@ remote_analysis/
         ...
 ```
 
-`BASE_DIR` in each figure script points to the local copy of `remote_analysis` (currently hardcoded to `/Users/wolfe/Desktop/projects/volcanos/remote_analysis`).
+`base_dir` in each figure's YAML points to the local copy of `remote_analysis` (currently `/Users/wolfe/Desktop/projects/volcanos/remote_analysis`).
 
 ## Running a figure script
 
+From inside the figure folder:
 ```bash
-python fig_aod_timeseries.py
+cd aod_timeseries
+python plot_aod_timeseries.py
 ```
 
-Each script is self-contained: edit the constants block at the top (BASE_DIR, CASE_GLOB, SUBPATH, EXCLUDE, etc.), then run it directly. Output is a PDF saved to the working directory.
+Or from the project root:
+```bash
+python aod_timeseries/plot_aod_timeseries.py
+```
 
-## Code structure
+Output PDF is written into the figure's own folder. Change `outfile` in the YAML to version outputs (e.g. `fig_aod_timeseries_v2.pdf`).
 
-| File | Role |
-|------|------|
-| `pub_data.py` | Shared utility — `find_csvs(base_dir, case_glob, subpath)` returns `{case_name: csv_path}` |
-| `fig_aod_timeseries.py` | Figure: AOD at 550 nm vs time for all `exovolc_tambora_*` cases |
+## Config split: YAML vs Python
 
-New figure scripts should import `find_csvs` from `pub_data` and follow the same constants-block pattern.
+**Edit the YAML** (`config_<name>.yaml`) to change: which cases are plotted, `base_dir`, `subpath`, `outfile`, `days_per_year`.
+
+**Edit the Python** (`plot_<name>.py`) to change: plot type, axes structure, data transforms, legend style, figure size. These are fixed once a figure is established.
+
+## Directory structure
+
+```
+pub_data.py
+aod_timeseries/
+  plot_aod_timeseries.py
+  config_aod_timeseries.yaml
+  fig_aod_timeseries.pdf        ← gitignored output
+aod_zonal_contour/
+  plot_aod_zonal_contour.py
+  config_aod_zonal_contour.yaml
+  fig_aod_zonal_contour.pdf
+```
+
+Each `plot_*.py` inserts the project root into `sys.path` so `pub_data` is importable regardless of invocation directory.
+
+`find_csvs_list` resolves paths as `base_dir/case_name/data/case_name/subpath`. Missing CSVs are printed to stdout and omitted (not raised).
+
+CSV column convention: column 0 = time (days), column 1 = the variable of interest. Read with `pd.read_csv(..., header=0)` and index via `.iloc`.
+
+## Adding a new figure
+
+1. Create a new folder `<name>/` in the project root.
+2. Copy `config_*.yaml` from an existing figure; update `base_dir`, `subpath`, `outfile`, and the `cases` list.
+3. Copy `plot_*.py` from a similar figure; update the config filename in the `yaml.safe_load` call and adjust plotting logic.
+4. The `sys.path` block and `here`-relative file paths can be copied verbatim.
 
 ## Dependencies
 
-`pandas`, `matplotlib` (standard scientific Python stack — no special install steps documented).
+`pandas`, `matplotlib`, `pyyaml` (standard scientific Python stack — no special install steps documented).

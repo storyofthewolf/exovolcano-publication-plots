@@ -1,0 +1,23 @@
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/exovolc_ben1
+subpath: aod/aod_zonal_550nm_band.csv
+outfile: fig_aod_zonal_contour_ben1.pdf
+days_per_year: 365.0
+
+cases:
+  - exovolc_ben1_h11s10
+  - exovolc_ben1_h12s10
+  - exovolc_ben1_h12s11
+  - exovolc_ben1_h12s11_k2.5
+  - exovolc_ben1_h12s11_k250
+  - exovolc_ben1_h12s11_lat-30
+  - exovolc_ben1_h12s11_lat-60
+  - exovolc_ben1_h12s11_lat-80
+  - exovolc_ben1_h12s11_lat30
+  - exovolc_ben1_h12s11_lat60
+  - exovolc_ben1_h12s11_lat80
+  - exovolc_ben1_h12s11_p1
+  - exovolc_ben1_h12s11_p10
+  - exovolc_ben1_h12s11_p100
+  - exovolc_ben1_h12s12
+  - exovolc_ben1_h12s13
+  - exovolc_ben1_h13s12

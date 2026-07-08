@@ -1,0 +1,22 @@
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/tambora_sensitivity_Jan1st
+subpath: aod/aod_550nm_band.csv
+outfile: fig_aod_timeseries_tambora.pdf
+days_per_year: 365.0
+
+cases:
+  - exovolc_tambora_k15d
+  - exovolc_tambora_k20d
+  - exovolc_tambora_k25d
+  - exovolc_tambora_k30d
+  - exovolc_tambora_k35d
+  - exovolc_tambora_k35d_r0.5
+  - exovolc_tambora_k35d_r0.5_p10
+  - exovolc_tambora_k35d_r0.5_p100
+  - exovolc_tambora_k35d_r0.5_sig0.1
+  - exovolc_tambora_k35d_r0.5_sig0.5
+  - exovolc_tambora_k35d_r0.5_sig0.7
+  - exovolc_tambora_k35d_r1
+  - exovolc_tambora_k35d_r2
+  - exovolc_tambora_k40d
+  - exovolc_tambora_k45d
+  - exovolc_tambora_k50d

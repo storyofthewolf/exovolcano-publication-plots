@@ -3,7 +3,15 @@
     "allow": [
       "Bash(gh auth *)",
       "Bash(git init *)",
-      "Bash(git add *)"
+      "Bash(git add *)",
+      "Bash(python3 *)",
+      "Bash(python *)",
+      "Read(//Users/wolfe/Desktop/projects/volcanos/remote_analysis/exovolc_tambora_k35d/data/exovolc_tambora_k35d/aod/**)",
+      "Bash(sips -s format png --resampleWidth 1400 fig_aod_twopanel.pdf --out /private/tmp/claude-193893/-Users-wolfe-Desktop-projects-volcanos-exovolcano-publication-plots/faa4fbec-e4c4-4d53-8eaa-e5b22c9d4b32/scratchpad/preview2.png)",
+      "Bash(sips -s format png fig_aod_twopanel.pdf --out /private/tmp/claude-193893/-Users-wolfe-Desktop-projects-volcanos-exovolcano-publication-plots/f259474e-c72a-4280-b119-003162498350/scratchpad/fig2.png)",
+      "Bash(gs -dSAFER -dBATCH -dNOPAUSE -sDEVICE=png16m -r150 -dEPSCrop -sOutputFile=/private/tmp/claude-193893/-Users-wolfe-Desktop-projects-volcanos-exovolcano-publication-plots/f259474e-c72a-4280-b119-003162498350/scratchpad/fig_ens.png fig_aod_twopanel.eps)",
+      "Bash(gs -dSAFER -dBATCH -dNOPAUSE -sDEVICE=png16m -r150 -dEPSCrop -sOutputFile=/private/tmp/claude-193893/-Users-wolfe-Desktop-projects-volcanos-exovolcano-publication-plots/f259474e-c72a-4280-b119-003162498350/scratchpad/fig_sulfur.png fig_sulfur_burden.eps)",
+      "Bash(gs -dSAFER -dBATCH -dNOPAUSE -sDEVICE=png16m -r150 -dEPSCrop -sOutputFile=/private/tmp/claude-193893/-Users-wolfe-Desktop-projects-volcanos-exovolcano-publication-plots/f259474e-c72a-4280-b119-003162498350/scratchpad/fig_sulfur2.png fig_sulfur_burden.eps)"
     ]
   }
 }

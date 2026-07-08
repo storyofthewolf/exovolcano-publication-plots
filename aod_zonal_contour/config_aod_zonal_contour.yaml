@@ -1,0 +1,10 @@
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+subpath: aod/aod_zonal_550nm_band.csv
+outfile: fig_aod_zonal_contour.pdf
+days_per_year: 365.0
+
+cases:
+  - exovolc_tambora_k10d
+  - exovolc_tambora_k20d
+  - exovolc_tambora_k40d
+  - exovolc_tambora_k50d

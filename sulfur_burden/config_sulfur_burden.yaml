@@ -1,0 +1,22 @@
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+case: exovolc_tambora_k35d
+
+# Scalar CSVs (relative to base_dir/<case>/data/<case>). Each holds a global
+# integrated mass time series in kg. NOTE: the CSV column headers list the wrong
+# units (mixing ratio / density) — the values are integrated totals in kg.
+subpath_so2:   scalar/SO2.csv
+subpath_h2so4: scalar/H2SO4.csv
+subpath_volc:  scalar/VOLCHZMD.csv    # H2SO4 aerosol burden
+
+outfile: fig_sulfur_burden.eps
+
+# t=0 (days_since_start = 0) maps to this calendar date.
+eruption_date: 1815-04-01
+# Calendar x-axis range [start, end]; major ticks each year, minor each month.
+xlim: [1815-01-01, 1820-01-01]
+
+# Sulfur mass fraction per species: (32 g S per mole) / (molecular weight).
+# SO2 MW 64; H2SO4 and VOLCHZ aerosol (H2SO4) MW 98.
+s_frac_so2:   0.500      # 32/64
+s_frac_h2so4: 0.32653    # 32/98
+s_frac_volc:  0.32653    # 32/98  (VOLCHZ aerosols are H2SO4)

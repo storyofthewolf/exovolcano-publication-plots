@@ -1,10 +1,14 @@
 base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
-case: exovolc_tambora_k35d
+# Fiducial case: highlighted in the left panel and shown in the right (zonal) panel.
+case: exovolc_tambora_k35d_r0.5
+# Glob (relative to base_dir) matching every case whose time series is drawn
+# faintly in the left panel; the mean over these cases is highlighted.
+case_glob: exovolc_tambora_*
 subpath_timeseries: aod/aod_0p550um_mie.csv
 subpath_zonal: aod/aod_zonal_0p550um_mie.csv
-outfile: fig_aod_twopanel.pdf
+outfile: fig_aod_twopanel.eps
 
 # t=0 (days_since_start = 0) maps to this calendar date.
 eruption_date: 1815-04-01
 # Calendar x-axis range [start, end]; major ticks each year, minor each month.
-xlim: [1814-01-01, 1820-01-01]
+xlim: [1815-01-01, 1820-01-01]
