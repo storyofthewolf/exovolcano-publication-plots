@@ -1,5 +1,9 @@
 base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
-case: exovolc_tambora_k35d
+# Fiducial case: drawn as a bold line.
+case: exovolc_tambora_k35d_r0.5
+# Glob (relative to base_dir) matching every case whose VOLCHZ sulfur burden is
+# drawn faintly; the fiducial above is overplotted in bold.
+case_glob: exovolc_tambora_*
 
 # Scalar CSVs (relative to base_dir/<case>/data/<case>). Each holds a global
 # integrated mass time series in kg. NOTE: the CSV column headers list the wrong
