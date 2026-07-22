@@ -1,0 +1,46 @@
+# Config for tambora_validation figure (Figure 1: VolMIP comparison).
+#
+# Current on-disk layout (NOT the old aod_twopanel/aod_zonal_contour scaffold
+# convention): base_dir/<eruption>/<case_name>/data/<subpath>
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+eruption: tambora
+
+# Fiducial case: highlighted in panel (a) and shown alone in panel (b).
+case: exovolc_tambora_fid
+
+# All 16 Tambora cases (fiducial + sweeps), drawn faintly in panel (a) as the
+# sensitivity envelope.
+cases:
+  - exovolc_tambora_fid
+  - exovolc_tambora_k15d
+  - exovolc_tambora_k25d
+  - exovolc_tambora_k35d
+  - exovolc_tambora_k45d
+  - exovolc_tambora_p10
+  - exovolc_tambora_p100
+  - exovolc_tambora_r0.25
+  - exovolc_tambora_r0.5
+  - exovolc_tambora_r1
+  - exovolc_tambora_scrit1.1
+  - exovolc_tambora_scrit2
+  - exovolc_tambora_scrit5
+  - exovolc_tambora_sig0.1
+  - exovolc_tambora_sig0.3
+  - exovolc_tambora_sig0.5
+
+subpath_timeseries: aod/aod_550nm_band.csv
+subpath_zonal: aod/aod_zonal_550nm_band.csv
+
+outfile_base: fig_tambora_validation
+
+# t=0 (days_since_start = 0) maps to this calendar date.
+eruption_date: 1815-04-01
+# Calendar x-axis range [start, end]; major ticks each year, minor each month.
+xlim: [1815-01-01, 1820-01-01]
+
+# VolMIP-Tambora inter-model peak stratospheric AOD (550 nm) range and
+# ensemble mean, from Clyne et al. (2021), used as the validation target band
+# in panel (a).
+volmip_saod_min: 0.27
+volmip_saod_max: 0.67
+volmip_saod_mean: 0.36

@@ -1,0 +1,30 @@
+# Config for tambora_sulfur_budget figure (Figure 2: sulfur/aerosol mass
+# budget for the fiducial Tambora case).
+#
+# Current on-disk layout: base_dir/<eruption>/<case_name>/data/<subpath>
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+eruption: tambora
+case: exovolc_tambora_fid
+
+subpath_so2: scalar/SO2.csv
+subpath_h2so4: scalar/H2SO4.csv
+subpath_volc: scalar/VOLCHZMD.csv
+subpath_aod: aod/aod_550nm_band.csv
+
+outfile_base: fig_tambora_sulfur_budget
+
+# t=0 (days_since_start = 0) maps to this calendar date.
+eruption_date: 1815-04-01
+# Calendar x-axis range [start, end]; major ticks each year, minor each month.
+xlim: [1815-01-01, 1820-01-01]
+
+# Molar masses (g/mol) used to convert each reservoir to Tg of sulfur.
+# S fraction = mw_s / mw_species. VOLCHZMD is the condensed sulfate aerosol,
+# treated as H2SO4 for this conversion.
+mw_s: 32.06
+mw_so2: 64.06
+mw_h2so4: 98.08
+mw_volc: 98.08
+
+# Injected total sulfur mass, for the annotation (60 Tg SO2 = 30 Tg S).
+injected_total_s_tg: 30.0

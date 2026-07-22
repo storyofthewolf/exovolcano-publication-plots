@@ -1,0 +1,42 @@
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/pinatubo
+
+subpath_timeseries: aod/aod_550nm_band.csv
+
+outfile_stem: fig_pinatubo_sensitivity
+
+# t=0 (days_since_start = 0) maps to this calendar date.
+eruption_date: 1991-06-15
+# Calendar x-axis range [start, end]; major ticks each year, minor each month.
+xlim: [1991-01-01, 1994-01-01]
+
+fiducial: exovolc_pinatubo_fid
+
+# Each panel: an ordered list of (case, label) pairs. The fiducial case is
+# marked automatically (heavier line weight + star marker in the legend)
+# by matching against `fiducial` above.
+panels:
+  - key: k
+    title: "(a) SO$_2$ conversion timescale, $K$"
+    cases:
+      - {case: exovolc_pinatubo_k20d, label: "20 d"}
+      - {case: exovolc_pinatubo_k30d, label: "30 d"}
+      - {case: exovolc_pinatubo_fid,  label: "35 d (fid.)"}
+      - {case: exovolc_pinatubo_k47d, label: "47 d"}
+  - key: reff
+    title: "(b) effective radius, R$_{eff}$"
+    cases:
+      - {case: exovolc_pinatubo_r0.25, label: "0.25 μm"}
+      - {case: exovolc_pinatubo_fid,   label: "0.5 μm (fid.)"}
+      - {case: exovolc_pinatubo_r1,    label: "1.0 μm"}
+  - key: so2
+    title: "(c) injected SO$_2$ mass"
+    cases:
+      - {case: exovolc_pinatubo_so2_14tg, label: "14 Tg"}
+      - {case: exovolc_pinatubo_fid,      label: "18 Tg (fid.)"}
+      - {case: exovolc_pinatubo_so2_23tg, label: "23 Tg"}
+  - key: pinj
+    title: "(d) injection pressure"
+    cases:
+      - {case: exovolc_pinatubo_p20,  label: "20 mb"}
+      - {case: exovolc_pinatubo_fid,  label: "40 mb (fid.)"}
+      - {case: exovolc_pinatubo_p100, label: "100 mb"}

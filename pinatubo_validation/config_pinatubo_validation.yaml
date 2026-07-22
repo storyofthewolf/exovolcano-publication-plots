@@ -1,0 +1,29 @@
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/pinatubo
+
+# Fiducial case: highlighted line in panel (a) and the case shown in panel (b).
+case: exovolc_pinatubo_fid
+# Glob (relative to base_dir) matching every case whose global-mean time series
+# is drawn faintly behind the fiducial in panel (a), to show the full sweep
+# sensitivity envelope (18 cases total, including the fiducial).
+case_glob: exovolc_pinatubo_*
+
+subpath_timeseries: aod/aod_550nm_band.csv
+subpath_zonal: aod/aod_zonal_550nm_band.csv
+
+outfile_stem: fig_pinatubo_validation
+
+# t=0 (days_since_start = 0) maps to this calendar date.
+eruption_date: 1991-06-15
+# Calendar x-axis range [start, end]; major ticks each year, minor each month.
+xlim: [1991-01-01, 1996-01-01]
+
+# Observational / reference model targets overlaid on panel (a).
+references:
+  - label: "Mills et al. (2016) WACCM peak global AOD"
+    value: 0.15
+    kind: model
+    color: "#0072B2"
+  - label: "GloSSAC tropical peak SAOD (Thomason et al. 2018)"
+    value: 0.20
+    kind: obs
+    color: "#D55E00"
