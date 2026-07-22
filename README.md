@@ -5,28 +5,47 @@ Publication-quality plotting scripts for:
 
 ## Overview
 
-This repo contains **bespoke plotting scripts** tailored for specific publication figures. Each script is self-contained with a constants block at the top for configuration.
+This repo contains **bespoke plotting scripts** tailored for specific publication figures. Each figure lives in its own folder as a `plot_<name>.py` / `config_<name>.yaml` pair: data selection and paths go in the YAML, plot structure in the Python.
 
 ### Data source
 
-CSV inputs are produced by [exovolcano-analysis](https://github.com/storyofthewolf/exovolcano-analysis) from ExoCAM `.h1.` time-series output files. See that repo for how to generate the CSV files used here.
+CSV inputs are produced by [exovolcano-analysis](https://github.com/storyofthewolf/exovolcano-analysis) from ExoCAM `.h1.` time-series output files. See that repo for how to generate them. The expected layout is:
+
+```
+remote_analysis/<eruption>/<case_name>/data/<subpath>
+```
 
 ### Quick start
 
 ```bash
-# Edit BASE_DIR, CASE_GLOB, etc. at the top of the script
-python fig_aod_timeseries.py
+cd tambora_validation
+python plot_tambora_validation.py
 
-# Output: fig_aod_timeseries.pdf
+# Outputs fig_tambora_validation.pdf and .eps into the same folder
 ```
 
-## Scripts
+Point `base_dir` in the YAML at your local copy of `remote_analysis`. Each script also accepts `--config <file>` to run a variant.
 
-- **fig_aod_timeseries.py**: AOD at 550 nm vs time for all `exovolc_tambora_*` cases
+## Figures
+
+Current (2026-07), built against the current data layout:
+
+- **tambora_validation/** — global-mean 550 nm AOD against the VolMIP-Tambora peak-SAOD band, plus a latitude-time Hovmoller
+- **tambora_sulfur_budget/** — SO2 / H2SO4 / sulfate-aerosol partitioning in Tg S, with AOD on a shared time axis
+- **pinatubo_validation/** — global-mean AOD against WACCM and GloSSAC reference values, plus a Hovmoller
+- **pinatubo_sensitivity/** — 2x2 one-at-a-time parameter sweeps about the fiducial
+
+Older folders (`aod_timeseries/`, `aod_zonal_contour/`, `aod_twopanel/`, `sulfur_burden/`) predate a change in the `remote_analysis` directory layout and no longer resolve their input paths. Keep them as style references; see DEVELOPER_NOTES.md before reusing them.
+
+## Output formats
+
+Scripts save both `.pdf` and `.eps` at 300 dpi. The manuscript is AASTeX and includes the `.eps` versions, which are committed to the manuscript repo rather than here (outputs are gitignored in this repo). After regenerating a figure, re-copy the `.eps` across.
 
 ## Dependencies
 
 - `pandas`
 - `matplotlib`
+- `pyyaml`
+- `numpy`
 
 See [CLAUDE.md](CLAUDE.md) for architecture and [DEVELOPER_NOTES.md](DEVELOPER_NOTES.md) for implementation details.
