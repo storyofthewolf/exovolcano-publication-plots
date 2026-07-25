@@ -1,0 +1,38 @@
+# Config for hunga_water_persistence figure: validates the model's ability to
+# reproduce the observationally defining feature of Hunga Tonga -- an
+# anomalous, long-lived stratospheric water enhancement that scales with
+# injected H2O mass and persists for years (Millan et al. 2022; Khaykin et al.
+# 2022). This model has NO H2O-dependent sulfate/aerosol coupling; this figure
+# validates the water anomaly only, not any aerosol effect of the water.
+#
+# Current on-disk layout: base_dir/<eruption>/<case_name>/data/<subpath>
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+eruption: hunga
+
+subpath_q_profile: profiles/Q.csv
+
+outfile_base: fig_hunga_water_persistence
+
+# t=0 (days_since_start = 0) maps to this calendar date.
+eruption_date: 2022-01-15
+# Calendar x-axis range for panel (a), the full 6-year run.
+xlim_ts: [2022-01-01, 2028-01-01]
+# Calendar x-axis range for panel (b), the Hovmoller (~first 2 years).
+xlim_hov: [2022-01-01, 2024-01-01]
+
+# Injection-layer altitude band (m) averaged for panel (a) and the
+# background/peak/decay diagnostics. Confirmed by direct calculation to give
+# a clean, monotonic-with-injected-mass, long-lived signal.
+band_alt_min_m: 25000.0
+band_alt_max_m: 40000.0
+
+# Fiducial case, drawn heaviest in panel (a) and used alone for panel (b).
+fiducial: exovolc_hunga_fid
+
+# Water-injection sweep, ordered light -> heavy H2O mass. Fiducial (146 Tg,
+# same injection as exovolc_hunga_h2o_146tg) is listed last and drawn heaviest.
+cases:
+  - {case: exovolc_hunga_h2o_none,  label: "0 Tg H$_2$O",        h2o_tg: 0}
+  - {case: exovolc_hunga_h2o_50tg,  label: "50 Tg H$_2$O",       h2o_tg: 50}
+  - {case: exovolc_hunga_h2o_100tg, label: "100 Tg H$_2$O",      h2o_tg: 100}
+  - {case: exovolc_hunga_fid,       label: "146 Tg H$_2$O (fid.)", h2o_tg: 146}

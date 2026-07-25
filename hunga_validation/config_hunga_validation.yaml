@@ -1,0 +1,39 @@
+# Config for hunga_validation figure: headline observational validation for
+# the ExoCAM Hunga Tonga-Hunga Ha'apai (2022) case, analogous to
+# pinatubo_validation/. Runs used here are the POST-FIX (half-open
+# eruption-column selection) set; see CLAUDE.md session handoff.
+#
+# Live quantitative target is Khaykin et al. (2022)'s DISPERSED (not
+# plume-tracked) 525 nm SAOD anomaly for March 2022, 60S-60N monthly mean =
+# 0.047 +/- 0.011. Do NOT reference the retired H2O-doubling target here.
+#
+# Current on-disk layout: base_dir/<case_name>/data/<subpath>
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga
+
+# Fiducial case: highlighted line in panel (a) and the case shown in panel (b).
+case: exovolc_hunga_fid
+# Glob (relative to base_dir) matching every case whose global-mean time
+# series is drawn faintly behind the fiducial in panel (a), to show the full
+# sweep sensitivity envelope (20 cases total, including the fiducial).
+case_glob: exovolc_hunga_*
+
+subpath_timeseries: aod/aod_550nm_band.csv
+subpath_zonal: aod/aod_zonal_550nm_band.csv
+
+outfile_stem: fig_hunga_validation
+
+# t=0 (days_since_start = 0) maps to this calendar date.
+eruption_date: 2022-01-15
+# Calendar x-axis range [start, end]; major ticks each year, minor each month.
+xlim: [2022-01-01, 2024-01-01]
+
+# Khaykin et al. (2022) dispersed (not plume-tracked) 525 nm SAOD anomaly,
+# 60S-60N monthly mean for March 2022. The plume-tracked day 1-4 values
+# (0.5-1.25) are NOT comparable to a zonal/global-mean model diagnostic and
+# must not be used here.
+references:
+  - label: "Khaykin et al. (2022) dispersed SAOD, 60°S-60°N, March 2022"
+    value: 0.047
+    error: 0.011
+    kind: obs
+    color: "#D55E00"
