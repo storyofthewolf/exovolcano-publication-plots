@@ -20,14 +20,38 @@ xlim_ts: [2022-01-01, 2028-01-01]
 # Calendar x-axis range for panel (b), the Hovmoller (~first 2 years).
 xlim_hov: [2022-01-01, 2024-01-01]
 
-# Injection-layer altitude band (m) averaged for panel (a) and the
-# background/peak/decay diagnostics. Confirmed by direct calculation to give
-# a clean, monotonic-with-injected-mass, long-lived signal.
+# Injection-layer altitude band (m), used for panel (b)'s band markers and
+# the vertical-structure diagnostics only. Confirmed by direct calculation to
+# give a clean, monotonic-with-injected-mass, long-lived signal.
 band_alt_min_m: 25000.0
 band_alt_max_m: 40000.0
 
+# Panel (a) is now a global stratospheric excess H2O MASS [Tg], not an
+# injection-layer mixing ratio, so it is directly comparable to Zhou et al.
+# (2026)'s Fig. 4a metric (dry-control-differenced, p < strat_p_max_pa).
+# dp per level is reconstructed from the profile CSV's pressure_Pa grid by
+# midpoint bisection; cross-checked against the exact CAM hybrid-sigma
+# interfaces (hyai/hybi) for exovolc_hunga_fid day 0 and found accurate to
+# ~0.6% in the summed stratospheric dp (levels above this cutoff) -- well
+# within the precision needed here.
+strat_p_max_pa: 6800.0   # 68 hPa, matching Zhou et al. (2026)'s definition
+g_const: 9.80665
+r_earth_m: 6371000.0
+dry_control: exovolc_hunga_h2o_none
+
 # Fiducial case, drawn heaviest in panel (a) and used alone for panel (b).
 fiducial: exovolc_hunga_fid
+
+# Zhou et al. (2026) Fig. 4a: exponential decay fit of Hunga excess H2O mass,
+# t=0 at the onset of the observed decay (May 2023), peak Tg from their Fig. 1
+# (~140-150 Tg plateau immediately pre-decay), e-folding times stated in their
+# abstract/Fig. 4 caption. Plotted as a reference curve, not digitized pixel
+# data -- these are the paper's own stated fit parameters.
+zhou2026:
+  decay_onset_date: 2023-05-01
+  peak_tg: 145.0
+  efold_mls_yr: 3.36
+  efold_tomcat_yr: 3.05
 
 # Water-injection sweep, ordered light -> heavy H2O mass. Fiducial (146 Tg,
 # same injection as exovolc_hunga_h2o_146tg) is listed last and drawn heaviest.

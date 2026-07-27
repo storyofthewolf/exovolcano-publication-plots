@@ -7,15 +7,23 @@ identical across the entire water-injection sweep). This figure therefore
 validates ONLY the model's ability to reproduce the observationally defining
 feature of Hunga Tonga: an anomalous, long-lived stratospheric water
 enhancement that scales with injected H2O mass and persists for years
-(Millan et al. 2022; Khaykin et al. 2022). No aerosol effect of the water is
-claimed or implied anywhere in this figure.
+(Millan et al. 2022; Khaykin et al. 2022; Zhou et al. 2026). No aerosol
+effect of the water is claimed or implied anywhere in this figure.
 
 Two panels:
-(a) Time series of the injection-layer (~25-40 km) area-mean water vapor
-    mixing ratio (ppmv) vs calendar time, one line per water-mass sweep case
-    (0, 50, 100, 146 Tg H2O), colorblind-safe palette, fiducial (146 Tg) drawn
-    heaviest. Spans the full 6-year run to show both the scaling with
-    injected mass and the multi-year decay/persistence.
+(a) Time series of the global stratospheric (p < strat_p_max_pa, default
+    68 hPa) excess H2O mass [Tg], differenced against the dry-injection
+    control case to remove the background seasonal cycle, one line per
+    water-mass sweep case (0, 50, 100, 146 Tg H2O), colorblind-safe palette,
+    fiducial (146 Tg) drawn heaviest. This is the same quantity and pressure
+    definition Zhou et al. (2026, their Fig. 1/4) use for the observed HEW
+    (Hunga excess water) mass, so their Fig. 4a exponential decay fit
+    (MLS/TOMCAT e-folding times, stated in their text) is overlaid directly
+    as a reference curve, not a digitized pixel reading. Air mass per level
+    is reconstructed from the profile CSV's pressure_Pa grid by midpoint
+    bisection; cross-checked against the exact CAM hybrid-sigma interfaces
+    for exovolc_hunga_fid and found accurate to ~0.6% in the summed
+    stratospheric dp -- adequate for this comparison.
 (b) Height-time (Hovmoller) contour of the water vapor mixing ratio ANOMALY
     (relative to each level's day-0 background) for the fiducial case only,
     over the first ~2 years, showing the vertical structure and slow
@@ -71,6 +79,12 @@ eruption = cfg['eruption']
 fiducial = cfg['fiducial']
 
 PPMV_PER_KGKG = 1.0e6   # kg/kg mixing ratio -> ppmv
+KG_PER_TG = 1.0e9
+
+G_CONST = cfg['g_const']
+R_EARTH_M = cfg['r_earth_m']
+AREA_EARTH = 4.0 * np.pi * R_EARTH_M**2
+STRAT_P_MAX_PA = cfg['strat_p_max_pa']
 
 
 def case_dir(c):
@@ -78,19 +92,44 @@ def case_dir(c):
 
 
 def load_q_profile(case):
-    """Read a profiles/Q.csv file. Returns (days, alt_m, Q[ntime, nlev])."""
+    """Read a profiles/Q.csv file. Returns (days, pres_Pa, alt_m, Q[ntime, nlev])."""
     p = os.path.join(case_dir(case), cfg['subpath_q_profile'])
     if not os.path.exists(p):
         raise SystemExit(f"Missing CSV: {p}")
     with open(p) as f:
-        f.readline()                 # pressure_Pa comment, unused here
+        pres_line = f.readline()
         alt_line = f.readline()
+    pres_pa = np.array([float(x) for x in
+                         pres_line.split(':', 1)[1].strip().strip(',').split(',')])
     alt_m = np.array([float(x) for x in
                        alt_line.split(':', 1)[1].strip().strip(',').split(',')])
     df = pd.read_csv(p, skiprows=2)
     days = df.iloc[:, 0].values.astype(float)
     q = df.iloc[:, 1:].values.astype(float)   # shape (ntime, nlev)
-    return days, alt_m, q
+    return days, pres_pa, alt_m, q
+
+
+def layer_dp(pres_pa):
+    """Interface pressures by midpoint bisection (level 0 = top, last = surface),
+    then per-level thickness dp [Pa]. Cross-checked against exact CAM
+    hybrid-sigma interfaces for exovolc_hunga_fid: ~0.6% accurate in the
+    summed stratospheric dp (see module docstring)."""
+    nlev = len(pres_pa)
+    interfaces = np.zeros(nlev + 1)
+    interfaces[1:-1] = 0.5 * (pres_pa[:-1] + pres_pa[1:])
+    interfaces[0] = 0.0
+    interfaces[-1] = pres_pa[-1] + (pres_pa[-1] - interfaces[-2])
+    return np.diff(interfaces)
+
+
+def strat_h2o_mass_tg(case):
+    """Global stratospheric (p < STRAT_P_MAX_PA) H2O mass [Tg] vs days_since_start."""
+    days, pres_pa, alt_m, q = load_q_profile(case)
+    dp = layer_dp(pres_pa)
+    dm_level = dp * AREA_EARTH / G_CONST   # kg of air per level, global
+    strat_mask = pres_pa < STRAT_P_MAX_PA
+    mass_kg = (q[:, strat_mask] * dm_level[None, strat_mask]).sum(axis=1)
+    return days, mass_kg / KG_PER_TG
 
 
 # ---------------------------------------------------------------------------
@@ -103,26 +142,34 @@ xlim_hov = (pd.Timestamp(cfg['xlim_hov'][0]), pd.Timestamp(cfg['xlim_hov'][1]))
 band_lo = cfg['band_alt_min_m']
 band_hi = cfg['band_alt_max_m']
 
-# --- Panel (a): injection-layer band-mean Q time series, all sweep cases ---
-band_series = {}   # case -> pd.Series indexed by days_since_start (ppmv)
-alt_ref = None
-band_idx_ref = None
+# --- Panel (a): global stratospheric excess H2O mass [Tg], all sweep cases ---
+# Differenced against the dry-injection control to remove the background
+# seasonal cycle, matching Zhou et al. (2026)'s HEW definition.
+dry_days, dry_mass_tg = strat_h2o_mass_tg(cfg['dry_control'])
+dry_series = pd.Series(dry_mass_tg, index=dry_days)
+
+mass_series = {}   # case -> pd.Series indexed by days_since_start (Tg, excess)
 for entry in cfg['cases']:
     c = entry['case']
-    days, alt_m, q = load_q_profile(c)
-    band_mask = (alt_m >= band_lo) & (alt_m <= band_hi)
-    band_mean_ppmv = q[:, band_mask].mean(axis=1) * PPMV_PER_KGKG
-    band_series[c] = pd.Series(band_mean_ppmv, index=days)
-    if c == fiducial:
-        alt_ref = alt_m
-        band_idx_ref = np.where(band_mask)[0]
+    days, mass_tg = strat_h2o_mass_tg(c)
+    excess_tg = mass_tg - dry_series.reindex(days).values
+    mass_series[c] = pd.Series(excess_tg, index=days)
 
-ts_frame = pd.DataFrame(band_series).sort_index()
+ts_frame = pd.DataFrame(mass_series).sort_index()
 ts_days  = ts_frame.index.values.astype(float)
 ts_dates = t0 + pd.to_timedelta(ts_days, unit='D')
 
+# --- Zhou et al. (2026) Fig. 4a reference curve: exponential decay from the
+# stated onset date and e-folding times, peak Tg from their Fig. 1 plateau. ---
+zcfg = cfg['zhou2026']
+zhou_onset = pd.Timestamp(zcfg['decay_onset_date'])
+zhou_dates = pd.date_range(zhou_onset, xlim_ts[1], freq='30D')
+zhou_years_since_onset = (zhou_dates - zhou_onset).days / 365.25
+zhou_mls_tg = zcfg['peak_tg'] * np.exp(-zhou_years_since_onset / zcfg['efold_mls_yr'])
+zhou_tomcat_tg = zcfg['peak_tg'] * np.exp(-zhou_years_since_onset / zcfg['efold_tomcat_yr'])
+
 # --- Panel (b): fiducial full-profile Q anomaly, Hovmoller ---
-fid_days, fid_alt_m, fid_q = load_q_profile(fiducial)
+fid_days, fid_pres_pa, fid_alt_m, fid_q = load_q_profile(fiducial)
 fid_q_ppmv = fid_q * PPMV_PER_KGKG
 fid_bg_ppmv = fid_q_ppmv[0, :]                 # per-level day-0 background
 fid_anom = fid_q_ppmv - fid_bg_ppmv[None, :]   # anomaly relative to each level
@@ -132,57 +179,60 @@ fid_alt_km = fid_alt_m / 1000.0
 # ---------------------------------------------------------------------------
 # Diagnostics
 # ---------------------------------------------------------------------------
-print(f"Injection-layer band: {band_lo/1000:.0f}-{band_hi/1000:.0f} km "
-      f"(levels {band_idx_ref.min()}-{band_idx_ref.max()} of the fiducial grid)")
+print(f"Global stratospheric H2O mass: p < {STRAT_P_MAX_PA/100:.0f} hPa, "
+      f"dry-control-differenced (control = {cfg['dry_control']})")
 print()
-print("Panel (a) sweep diagnostics (band-mean water vapor mixing ratio):")
+print("Panel (a) sweep diagnostics (global stratospheric excess H2O mass):")
 for entry in cfg['cases']:
     c = entry['case']
     s = ts_frame[c]
-    bg = s.iloc[0]
     peak_idx = np.nanargmax(s.values)
     peak = s.values[peak_idx]
     peak_day = s.index.values[peak_idx]
-    print(f"  {c:28s} day-0 = {bg:.4f} ppmv, peak = {peak:.4f} ppmv "
-          f"at day {peak_day:.0f}, ratio to background = {peak/bg:.2f}")
+    print(f"  {c:28s} peak excess = {peak:7.1f} Tg at day {peak_day:.0f}")
 
-# Fiducial vertical-structure diagnostics: peak anomaly level/altitude, and
-# e-folding decay time of the injection-layer band-mean anomaly. Restrict the
-# level search to the stratosphere (> 15 km) -- the raw full-column max is
-# dominated by tropospheric water-cycle noise near the surface (natural
-# mixing ratios there are orders of magnitude larger than the injection
-# signal), not the volcanic anomaly.
-strat_mask = fid_alt_m > 15000.0
-flat_peak = np.nanargmax(fid_anom[:, strat_mask])
-strat_alt_km = fid_alt_km[strat_mask]
-pi, pj = np.unravel_index(flat_peak, fid_anom[:, strat_mask].shape)
-peak_anom_val = fid_anom[:, strat_mask][pi, pj]
-peak_anom_day = fid_days[pi]
-peak_anom_alt_km = strat_alt_km[pj]
+# Fiducial e-folding, computed from the same decay-onset convention Zhou et
+# al. (2026) use (their May-2023 onset), not from the model's own peak, so
+# the two e-folding times are apples-to-apples.
+fid_excess = ts_frame[fiducial].values
+fid_peak_idx = np.nanargmax(fid_excess)
+fid_peak_day = ts_days[fid_peak_idx]
+fid_peak_val = fid_excess[fid_peak_idx]
 
-band_anom_fid = (fid_q_ppmv[:, band_idx_ref].mean(axis=1)
-                  - fid_bg_ppmv[band_idx_ref].mean())
-band_peak_idx = np.nanargmax(band_anom_fid)
-band_peak_val = band_anom_fid[band_peak_idx]
-band_peak_day = fid_days[band_peak_idx]
-efold_thresh = band_peak_val / np.e
-post_peak = np.where(
-    (fid_days >= band_peak_day) & (band_anom_fid <= efold_thresh)
-)[0]
-if len(post_peak) > 0:
-    efold_day = fid_days[post_peak[0]]
-    efold_elapsed = efold_day - band_peak_day
-    efold_str = f"day {efold_day:.0f} ({efold_elapsed:.0f} d after peak)"
+onset_day = (zhou_onset - t0).days
+onset_idx = np.searchsorted(ts_days, onset_day)
+onset_val = fid_excess[onset_idx]
+efold_thresh = onset_val / np.e
+post_onset = np.where((ts_days >= onset_day) & (fid_excess <= efold_thresh))[0]
+if len(post_onset) > 0:
+    efold_day = ts_days[post_onset[0]]
+    efold_yr = (efold_day - onset_day) / 365.25
+    efold_str = f"{efold_yr:.2f} yr after onset (day {efold_day:.0f})"
 else:
-    efold_str = "not reached within run (>2190 d after peak)"
+    efold_str = "not reached within run"
 
 print()
-print(f"Fiducial ({fiducial}) vertical-structure diagnostics:")
+print(f"Fiducial ({fiducial}) mass diagnostics:")
+print(f"  peak excess = {fid_peak_val:.1f} Tg at day {fid_peak_day:.0f} "
+      f"({fid_peak_day/365.25:.2f} yr)")
+print(f"  excess at Zhou et al. decay-onset date ({zhou_onset.date()}) = "
+      f"{onset_val:.1f} Tg")
+print(f"  e-folds (from onset) to {efold_thresh:.1f} Tg at {efold_str}")
+print(f"  cf. Zhou et al. (2026): e-folding {zcfg['efold_mls_yr']} yr (MLS), "
+      f"{zcfg['efold_tomcat_yr']} yr (TOMCAT), from the same onset convention")
+
+# Vertical-structure diagnostics for panel (b), unchanged in method.
+strat_mask_b = fid_alt_m > 15000.0
+flat_peak = np.nanargmax(fid_anom[:, strat_mask_b])
+strat_alt_km = fid_alt_km[strat_mask_b]
+pi, pj = np.unravel_index(flat_peak, fid_anom[:, strat_mask_b].shape)
+peak_anom_val = fid_anom[:, strat_mask_b][pi, pj]
+peak_anom_day = fid_days[pi]
+peak_anom_alt_km = strat_alt_km[pj]
+print()
+print(f"Fiducial ({fiducial}) vertical-structure diagnostics (panel b):")
 print(f"  peak stratospheric (>15 km) grid-level anomaly = {peak_anom_val:.4f} "
       f"ppmv at day {peak_anom_day:.0f}, altitude {peak_anom_alt_km:.1f} km")
-print(f"  injection-layer band-mean peak anomaly = {band_peak_val:.4f} ppmv "
-      f"at day {band_peak_day:.0f}")
-print(f"  decays to 1/e of peak ({efold_thresh:.4f} ppmv) at {efold_str}")
 
 # ---------------------------------------------------------------------------
 # Plot
@@ -192,7 +242,7 @@ fig, (ax_ts, ax_hov) = plt.subplots(
     gridspec_kw={'width_ratios': [1, 1.15], 'wspace': 0.32},
 )
 
-# --- Panel (a): band-mean water vapor mixing ratio, sweep cases ---
+# --- Panel (a): global stratospheric excess H2O mass, sweep cases ---
 # Colorblind-safe (Okabe-Ito-derived) palette, light -> heavy H2O mass.
 sweep_colors = ['#999999', '#0072B2', '#E69F00', '#D55E00']
 
@@ -205,12 +255,20 @@ for entry, color in zip(cfg['cases'], sweep_colors):
                zorder=5 if is_fid else 3,
                label=entry['label'])
 
+# Zhou et al. (2026) Fig. 4a reference curves (their stated exponential fit,
+# not digitized pixel data) -- MLS observations and TOMCAT model, both scaled
+# to the same peak Tg as a shape/timescale comparison, not an amplitude claim.
+ax_ts.plot(zhou_dates, zhou_mls_tg, color='black', lw=1.1, ls='--',
+           zorder=4, label='Zhou et al. (2026), MLS')
+ax_ts.plot(zhou_dates, zhou_tomcat_tg, color='black', lw=1.1, ls=':',
+           zorder=4, label='Zhou et al. (2026), TOMCAT')
+
 ax_ts.set_xlabel('Year')
-ax_ts.set_ylabel(r'H$_2$O mixing ratio, 25$-$40 km (ppmv)')
+ax_ts.set_ylabel(r'Stratospheric excess H$_2$O mass (Tg)')
 ax_ts.set_xlim(*xlim_ts)
 ax_ts.set_ylim(bottom=0)
 ax_ts.yaxis.set_minor_locator(ticker.AutoMinorLocator())
-ax_ts.legend(fontsize=6.5, frameon=False, loc='upper right')
+ax_ts.legend(fontsize=6, frameon=False, loc='upper right')
 ax_ts.text(0.02, 0.96, '(a)', transform=ax_ts.transAxes,
            fontsize=9, fontweight='bold', va='top', ha='left')
 
