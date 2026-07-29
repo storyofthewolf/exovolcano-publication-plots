@@ -1,11 +1,19 @@
 # Config for hunga_validation figure: headline observational validation for
 # the ExoCAM Hunga Tonga-Hunga Ha'apai (2022) case, analogous to
-# pinatubo_validation/. Runs used here are the POST-FIX (half-open
-# eruption-column selection) set; see CLAUDE.md session handoff.
+# pinatubo_validation/. Runs used here are the SECOND corrected set (residual
+# 2x over-injection bug fixed in b2df9a1, rerun completed on HPC 2026-07-28/29,
+# fetched 2026-07-29); the first "corrected" set used for the 2026-07-25 draft
+# still had the residual bug and is superseded -- see CLAUDE.md session
+# handoff and memory hunga-rerun-injection-fix.
 #
-# Live quantitative target is Khaykin et al. (2022)'s DISPERSED (not
-# plume-tracked) 525 nm SAOD anomaly for March 2022, 60S-60N monthly mean =
-# 0.047 +/- 0.011. Do NOT reference the retired H2O-doubling target here.
+# No global-mean quantitative target is plotted here: Khaykin et al. (2022)'s
+# oft-quoted 0.047 +/- 0.011 dispersed SAOD value does NOT appear as stated
+# text in that paper (verified against the full article) and has been
+# dropped. The manuscript instead compares against Taha et al. (2022)'s
+# qualitative claims and its own 30S-15N band, computed directly from this
+# run's zonal CSV rather than plotted as a fixed reference line -- see
+# main.tex sec:hungatonga. Do NOT reference the retired H2O-doubling target
+# here either.
 #
 # Current on-disk layout: base_dir/<case_name>/data/<subpath>
 base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga
@@ -27,13 +35,8 @@ eruption_date: 2022-01-15
 # Calendar x-axis range [start, end]; major ticks each year, minor each month.
 xlim: [2022-01-01, 2024-01-01]
 
-# Khaykin et al. (2022) dispersed (not plume-tracked) 525 nm SAOD anomaly,
-# 60S-60N monthly mean for March 2022. The plume-tracked day 1-4 values
-# (0.5-1.25) are NOT comparable to a zonal/global-mean model diagnostic and
-# must not be used here.
-references:
-  - label: "Khaykin et al. (2022) dispersed SAOD, 60°S-60°N, March 2022"
-    value: 0.047
-    error: 0.011
-    kind: obs
-    color: "#D55E00"
+# No published Hunga Tonga sAOD retrieval reports a single global-mean or
+# fixed comparable number (see main.tex sec:hungatonga), so panel (a) plots
+# no horizontal reference line/band. Left empty deliberately -- do not
+# reintroduce the retired Khaykin 0.047 figure-reading value here.
+references: []
