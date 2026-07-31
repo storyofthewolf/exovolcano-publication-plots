@@ -1,0 +1,54 @@
+# Config for hunga_schoeberl_compare: the first-year 550 nm AOD diagnostics
+# for the Hunga Tonga ensemble, on the averaging basis Schoeberl et al. (2023)
+# report their global-mean peak on.
+#
+# SCOPE AND HONESTY NOTE -- read before extending this figure.
+# These panels are built from the model ensemble alone. They are NOT a
+# digitization or replication of any panel in Schoeberl et al. (2023): that
+# paper was not available when this figure was written, so its figure
+# structure, latitude range, contour levels, and axis conventions are unknown
+# here. The ONLY quantity taken from it is the peak globally-averaged 550 nm
+# AOD of 0.018 in March-April 2022, which is verified stated text (see
+# HungaTonga-AOD-references.md sec.10) and is drawn as a reference marker in
+# panel (a). Do not add further reference lines, and do not relabel this
+# figure as a replication, without the paper in hand.
+#
+# The 550 nm wavelength and the global-mean averaging match our diagnostic to
+# Schoeberl's exactly, which is what makes the one comparison drawn here
+# legitimate; see main.tex sec:hungatonga.
+
+base_dirs:
+  phase1: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga
+  phase2: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga_phase2
+
+subpath_timeseries: aod/aod_550nm_band.csv
+subpath_zonal: aod/aod_zonal_550nm_band.csv
+
+# Every case in each phase is drawn as the ensemble envelope in panel (a).
+case_glob: 'exovolc_hunga_*'
+
+# Highlighted cases. fid is the observationally-grounded fiducial;
+# raikoke_equiv is the calibration control whose SO2 mass is NOT in dispute
+# and which therefore carries the quantitative comparison (see main.tex).
+fiducial:      {case: exovolc_hunga_fid,           phase: phase1, label: 'Fiducial, 0.5 Tg SO$_2$'}
+calibration:   {case: exovolc_hunga_raikoke_equiv, phase: phase2, label: 'Raikoke-equivalent, 1.5 Tg SO$_2$'}
+
+# Case shown in the zonal contour panel (b).
+zonal_case: exovolc_hunga_fid
+zonal_phase: phase1
+
+# First year only, matching the window requested for this comparison.
+n_days: 365
+
+# t=0 maps to the eruption date.
+eruption_date: 2022-01-15
+
+# The single verified quantity from Schoeberl et al. (2023): peak globally
+# averaged 550 nm AOD, March-April 2022. Drawn as a horizontal line plus a
+# shaded month span. Do NOT add unverified values here.
+reference:
+  value: 0.018
+  label: 'Schoeberl et al. (2023) global-mean peak'
+  window: ['2022-03-01', '2022-05-01']
+
+outfile_stem: fig_hunga_schoeberl_compare
