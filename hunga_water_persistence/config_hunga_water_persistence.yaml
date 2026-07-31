@@ -39,8 +39,31 @@ g_const: 9.80665
 r_earth_m: 6371000.0
 dry_control: exovolc_hunga_h2o_none
 
-# Fiducial case, drawn heaviest in panel (a) and used alone for panel (b).
-fiducial: exovolc_hunga_fid
+# Case drawn heaviest in panel (a) and used alone for panel (b).
+#
+# NOTE (2026-07-31): the manuscript fiducial moved to
+# exovolc_hunga_r0.4_so2_1.0tg (1.0 Tg SO2, Reff = 0.4 um). This figure
+# deliberately keeps exovolc_hunga_fid as its reference case, because here
+# that case is the 146 Tg MEMBER OF THE WATER SWEEP, not "the fiducial":
+# the four cases below vary injected water at FIXED SO2 and Reff, and
+# substituting a case that differs in three parameters at once would destroy
+# the control that makes the sweep's linearity meaningful.
+#
+# The manuscript fiducial is overlaid separately (see fiducial_overlay) so the
+# figure still shows the configuration the paper adopts. Its water differs
+# from this case by at most ~4.5% (mean ~1.2%), not zero: SO2 mass and Reff
+# both change the AOD, hence stratospheric heating, hence transport of the
+# water tracer. That is a radiative feedback on circulation, NOT the
+# H2O-dependent sulfate pathway the scheme lacks -- cases identical in SO2
+# and Reff agree to machine zero.
+reference_case: exovolc_hunga_fid
+
+# The manuscript fiducial, drawn as a separate overlay in panel (a) so the
+# adopted configuration is visible without perturbing the sweep.
+fiducial_overlay:
+  case: exovolc_hunga_r0.4_so2_1.0tg
+  batch: hunga_phase2
+  label: "Fiducial (1.0 Tg SO$_2$, 0.4 $\\mu$m)"
 
 # Zhou et al. (2026) Fig. 4a: exponential decay fit of Hunga excess H2O mass,
 # t=0 at the onset of the observed decay (May 2023), peak Tg from their Fig. 1
@@ -59,4 +82,4 @@ cases:
   - {case: exovolc_hunga_h2o_none,  label: "0 Tg H$_2$O",        h2o_tg: 0}
   - {case: exovolc_hunga_h2o_50tg,  label: "50 Tg H$_2$O",       h2o_tg: 50}
   - {case: exovolc_hunga_h2o_100tg, label: "100 Tg H$_2$O",      h2o_tg: 100}
-  - {case: exovolc_hunga_fid,       label: "146 Tg H$_2$O (fid.)", h2o_tg: 146}
+  - {case: exovolc_hunga_fid,       label: "146 Tg H$_2$O", h2o_tg: 146}

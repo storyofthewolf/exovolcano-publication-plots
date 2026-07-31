@@ -76,7 +76,12 @@ cfg = yaml.safe_load(open(os.path.join(here, args.config)))
 
 base_dir = cfg['base_dir']
 eruption = cfg['eruption']
-fiducial = cfg['fiducial']
+# Renamed from 'fiducial' in 2026-07: this is the 146 Tg member of the water
+# sweep, which is no longer the manuscript's fiducial configuration. The
+# adopted fiducial is overlaid separately (fiducial_overlay) and lives in a
+# different batch directory.
+reference_case = cfg['reference_case']
+fid_overlay = cfg.get('fiducial_overlay')
 
 PPMV_PER_KGKG = 1.0e6   # kg/kg mixing ratio -> ppmv
 KG_PER_TG = 1.0e9
@@ -87,13 +92,15 @@ AREA_EARTH = 4.0 * np.pi * R_EARTH_M**2
 STRAT_P_MAX_PA = cfg['strat_p_max_pa']
 
 
-def case_dir(c):
-    return os.path.join(base_dir, eruption, c, 'data')
+def case_dir(c, batch=None):
+    """Data directory for a case. `batch` overrides the default eruption
+    directory, which the phase-2 overlay case needs."""
+    return os.path.join(base_dir, batch or eruption, c, 'data')
 
 
-def load_q_profile(case):
+def load_q_profile(case, batch=None):
     """Read a profiles/Q.csv file. Returns (days, pres_Pa, alt_m, Q[ntime, nlev])."""
-    p = os.path.join(case_dir(case), cfg['subpath_q_profile'])
+    p = os.path.join(case_dir(case, batch), cfg['subpath_q_profile'])
     if not os.path.exists(p):
         raise SystemExit(f"Missing CSV: {p}")
     with open(p) as f:
@@ -122,14 +129,19 @@ def layer_dp(pres_pa):
     return np.diff(interfaces)
 
 
-def strat_h2o_mass_tg(case):
-    """Global stratospheric (p < STRAT_P_MAX_PA) H2O mass [Tg] vs days_since_start."""
-    days, pres_pa, alt_m, q = load_q_profile(case)
+def strat_h2o_mass_tg_batch(case, batch=None):
+    """Global stratospheric (p < STRAT_P_MAX_PA) H2O mass [Tg] vs days_since_start.
+    `batch` selects a directory other than the default eruption one."""
+    days, pres_pa, alt_m, q = load_q_profile(case, batch)
     dp = layer_dp(pres_pa)
     dm_level = dp * AREA_EARTH / G_CONST   # kg of air per level, global
     strat_mask = pres_pa < STRAT_P_MAX_PA
     mass_kg = (q[:, strat_mask] * dm_level[None, strat_mask]).sum(axis=1)
     return days, mass_kg / KG_PER_TG
+
+
+def strat_h2o_mass_tg(case):
+    return strat_h2o_mass_tg_batch(case, None)
 
 
 # ---------------------------------------------------------------------------
@@ -169,7 +181,7 @@ zhou_mls_tg = zcfg['peak_tg'] * np.exp(-zhou_years_since_onset / zcfg['efold_mls
 zhou_tomcat_tg = zcfg['peak_tg'] * np.exp(-zhou_years_since_onset / zcfg['efold_tomcat_yr'])
 
 # --- Panel (b): fiducial full-profile Q anomaly, Hovmoller ---
-fid_days, fid_pres_pa, fid_alt_m, fid_q = load_q_profile(fiducial)
+fid_days, fid_pres_pa, fid_alt_m, fid_q = load_q_profile(reference_case)
 fid_q_ppmv = fid_q * PPMV_PER_KGKG
 fid_bg_ppmv = fid_q_ppmv[0, :]                 # per-level day-0 background
 fid_anom = fid_q_ppmv - fid_bg_ppmv[None, :]   # anomaly relative to each level
@@ -194,7 +206,7 @@ for entry in cfg['cases']:
 # Fiducial e-folding, computed from the same decay-onset convention Zhou et
 # al. (2026) use (their May-2023 onset), not from the model's own peak, so
 # the two e-folding times are apples-to-apples.
-fid_excess = ts_frame[fiducial].values
+fid_excess = ts_frame[reference_case].values
 fid_peak_idx = np.nanargmax(fid_excess)
 fid_peak_day = ts_days[fid_peak_idx]
 fid_peak_val = fid_excess[fid_peak_idx]
@@ -212,7 +224,7 @@ else:
     efold_str = "not reached within run"
 
 print()
-print(f"Fiducial ({fiducial}) mass diagnostics:")
+print(f"Reference case ({reference_case}) mass diagnostics:")
 print(f"  peak excess = {fid_peak_val:.1f} Tg at day {fid_peak_day:.0f} "
       f"({fid_peak_day/365.25:.2f} yr)")
 print(f"  excess at Zhou et al. decay-onset date ({zhou_onset.date()}) = "
@@ -230,7 +242,7 @@ peak_anom_val = fid_anom[:, strat_mask_b][pi, pj]
 peak_anom_day = fid_days[pi]
 peak_anom_alt_km = strat_alt_km[pj]
 print()
-print(f"Fiducial ({fiducial}) vertical-structure diagnostics (panel b):")
+print(f"Reference case ({reference_case}) vertical-structure diagnostics (panel b):")
 print(f"  peak stratospheric (>15 km) grid-level anomaly = {peak_anom_val:.4f} "
       f"ppmv at day {peak_anom_day:.0f}, altitude {peak_anom_alt_km:.1f} km")
 
@@ -248,12 +260,29 @@ sweep_colors = ['#999999', '#0072B2', '#E69F00', '#D55E00']
 
 for entry, color in zip(cfg['cases'], sweep_colors):
     c = entry['case']
-    is_fid = (c == fiducial)
+    is_fid = (c == reference_case)
     ax_ts.plot(ts_dates, ts_frame[c].values,
                lw=2.0 if is_fid else 1.2,
                color=color,
                zorder=5 if is_fid else 3,
                label=entry['label'])
+
+# The manuscript fiducial, overlaid rather than substituted into the sweep:
+# it differs from the 146 Tg member in SO2 mass and Reff as well as being the
+# adopted configuration, so putting it IN the sweep would break the
+# one-parameter control that makes the sweep's linearity meaningful. Drawn
+# thin over the 146 Tg line it nearly coincides with.
+if fid_overlay:
+    ov_days, ov_mass = strat_h2o_mass_tg_batch(
+        fid_overlay['case'], fid_overlay.get('batch'))
+    ov_excess = ov_mass - dry_series.reindex(ov_days).values
+    ov_dates = t0 + pd.to_timedelta(ov_days, unit='D')
+    ax_ts.plot(ov_dates, ov_excess, lw=1.0, color='#009E73', ls='-',
+               zorder=6, label=fid_overlay['label'])
+    ref_peak = np.nanmax(ts_frame[reference_case].values)
+    print(f"\nFiducial overlay ({fid_overlay['case']}):")
+    print(f"  peak excess          {np.nanmax(ov_excess):.1f} Tg "
+          f"(146 Tg sweep member: {ref_peak:.1f} Tg)")
 
 # Zhou et al. (2026) Fig. 4a reference curves (their stated exponential fit,
 # not digitized pixel data) -- MLS observations and TOMCAT model, both scaled
@@ -280,7 +309,9 @@ ax_ts.text(0.02, 0.96, '(a)', transform=ax_ts.transAxes,
 # panel is meant to show.
 hov_alt_mask = (fid_alt_km >= 15) & (fid_alt_km <= 50)
 hov_time_mask = (fid_dates >= xlim_hov[0]) & (fid_dates <= xlim_hov[1])
-vmax = np.nanmax(fid_anom[np.ix_(hov_time_mask, hov_alt_mask)])
+# Rounded up to a clean value so the colorbar carries readable ticks rather
+# than the raw data maximum's decimals.
+vmax = float(np.ceil(np.nanmax(fid_anom[np.ix_(hov_time_mask, hov_alt_mask)]) * 2.0) / 2.0)
 levels = np.linspace(0, vmax, 25)
 
 cf = ax_hov.contourf(
