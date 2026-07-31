@@ -1,0 +1,48 @@
+# Config for the hunga_plume_linearity figure: does the plume-tracked
+# (longitude-resolved) AOD scale linearly with injected SO2, as the global
+# mean does exactly?
+#
+# Phase-1 cases live in remote_analysis/hunga, phase-2 in
+# remote_analysis/hunga_phase2, so both roots are listed and each case names
+# its own. The lon-lat CSVs are produced by exovolcano-analysis'
+# lonlat_aod.py (NOT run_time_series.py) -- it is the only diagnostic in that
+# package that keeps the full (time, lat, lon) AOD field rather than reducing
+# over longitude. Days are pinned to the set both phases were run on.
+#
+# IMPORTANT -- what this figure is and is not. The plume-tracked AOD is NOT
+# an observational validation target: in-plume values are not comparable to
+# zonal- or global-mean SAOD, and the days-to-weeks dense-plume regime is
+# outside what this scheme is designed to resolve (see
+# HungaTonga-AOD-references.md sec.67). This figure is a MODEL-BEHAVIOR
+# diagnostic: it asks whether the exact linearity of the global mean in
+# injected SO2 also holds for the plume core. It does not. Do not add an
+# observational reference line to it, and in particular do not reintroduce
+# the plume-tracked 0.5-1.25 range once attributed to Khaykin et al. (2022),
+# which has never been confirmed as stated text in that paper.
+
+base_dirs:
+  phase1: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga
+  phase2: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga_phase2
+
+subpath_lonlat: lonlat            # under <base_dir>/<case>/data/
+subpath_timeseries: aod/aod_550nm_band.csv
+
+# Snapshot days both phases were generated on.
+days: [1, 4, 10, 30, 107]
+
+# The SO2 axis: same K = 17 d and Reff = 0.5 um throughout, so injected SO2
+# mass is the only variable. sellitto_fid is phase 1; the other two are the
+# phase-2 extension run specifically to test whether linearity holds.
+so2_axis:
+  - {case: exovolc_hunga_sellitto_fid,  phase: phase1, so2: 1.0, label: '1.0 Tg'}
+  - {case: exovolc_hunga_sellitto_1.5tg, phase: phase2, so2: 1.5, label: '1.5 Tg'}
+  - {case: exovolc_hunga_sellitto_2.0tg, phase: phase2, so2: 2.0, label: '2.0 Tg'}
+
+# Reference case for panel (a)'s context: the 0.5 Tg fiducial, off the
+# Sellitto axis (K = 28 d), plotted to show the full span of the suite.
+fiducial: {case: exovolc_hunga_fid, phase: phase1, so2: 0.5, label: 'Fiducial, 0.5 Tg'}
+
+outfile_stem: fig_hunga_plume_linearity
+
+# t=0 maps to the eruption date.
+eruption_date: 2022-01-15
