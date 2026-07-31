@@ -57,12 +57,24 @@ args = parser.parse_args()
 
 cfg = yaml.safe_load(open(os.path.join(here, args.config)))
 
-base_dir = cfg['base_dir']
+# The fiducial moved into the phase-2 suite, so cases now live under either
+# of two roots; resolve each case against the first root that has it.
+base_dirs = cfg['base_dirs']
 case = cfg['case']
-zonal_path = os.path.join(base_dir, case, 'data', cfg['subpath_zonal'])
 
-if not os.path.exists(zonal_path):
-    raise SystemExit(f"Missing zonal CSV: {zonal_path}")
+
+def resolve(case_name, subpath):
+    """Absolute path to one case's CSV, searching each base_dir in order."""
+    for base in base_dirs:
+        p = os.path.join(base, case_name, 'data', subpath)
+        if os.path.exists(p):
+            return p
+    return None
+
+
+zonal_path = resolve(case, cfg['subpath_zonal'])
+if zonal_path is None:
+    raise SystemExit(f"Missing zonal CSV for {case} under {base_dirs}")
 
 # ---------------------------------------------------------------------------
 # Load data
@@ -72,12 +84,16 @@ t0 = pd.Timestamp(cfg['eruption_date'])
 
 # --- Ensemble of global-mean time series (panel a) ---
 case_dirs = sorted(
-    d for d in glob.glob(os.path.join(base_dir, cfg['case_glob']))
+    d
+    for base in base_dirs
+    for d in glob.glob(os.path.join(base, cfg['case_glob']))
     if os.path.isdir(d)
 )
 ts_series = {}   # case_name -> pd.Series indexed by days_since_start
 for d in case_dirs:
     c = os.path.basename(d)
+    if c in ts_series:      # the two suites are disjoint; never double-count
+        continue
     p = os.path.join(d, 'data', cfg['subpath_timeseries'])
     if not os.path.exists(p):
         print(f"  (skip, no time series) {c}")
@@ -155,7 +171,7 @@ for c in ts_frame.columns:
 ax_ts.plot([], [], lw=1.2, color='0.75', label=f'Sweep members (n={n_other})')
 
 ax_ts.plot(ts_dates, ts_fid, lw=1.6, color='C3', zorder=4,
-           label='Fiducial (0.4-0.5 Tg SO$_2$)')
+           label=cfg.get('case_label', 'Fiducial'))
 
 # Observational reference: dispersed (not plume-tracked) SAOD anomaly, drawn
 # as a solid line plus a solid pale band for +/- the quoted uncertainty.
@@ -172,7 +188,10 @@ for ref in cfg['references']:
 ax_ts.set_xlabel('Year')
 ax_ts.set_ylabel('AOD at 550 nm')
 ax_ts.set_xlim(*xlim)
-ax_ts.set_ylim(0, 0.07)
+# Derived from the ensemble rather than hardcoded: the fiducial changed in
+# 2026-07 and a fixed ceiling silently clipped the new one.
+ts_top = float(np.ceil(np.nanmax(ts_frame.values) * 50.0) / 50.0)
+ax_ts.set_ylim(0, ts_top)
 ax_ts.yaxis.set_minor_locator(ticker.AutoMinorLocator())
 # Panel label in the upper-left; the eruption-driven curves rise from zero
 # near the eruption date and stay well below this figure's y-max, so the
@@ -187,7 +206,8 @@ ax_ts.legend(fontsize=6, frameon=False, loc='upper center',
              labelspacing=0.3, borderaxespad=0.0)
 
 # --- (b) Zonal AOD contour, fiducial ---
-levels = np.linspace(0, 0.07, 25)
+zon_top = float(np.ceil(np.nanmax(zon_aod) * 50.0) / 50.0)
+levels = np.linspace(0, zon_top, 25)
 
 cf = ax_zon.contourf(
     zon_dates, lats, zon_aod.T,
@@ -200,7 +220,7 @@ cf.set_edgecolor('face')
 cf.set_linewidth(0)
 
 cbar = fig.colorbar(cf, ax=ax_zon, pad=0.02, aspect=30)
-cbar.set_ticks(np.linspace(0, 0.07, 8))
+cbar.set_ticks(np.linspace(0, zon_top, 6))
 cbar.set_label('AOD at 550 nm')
 cbar.ax.yaxis.set_minor_locator(ticker.AutoMinorLocator())
 

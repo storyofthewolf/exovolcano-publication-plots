@@ -91,6 +91,9 @@ def get(entry):
 
 fid_days, fid_aod = get(cfg['fiducial'])
 cal_days, cal_aod = get(cfg['calibration'])
+# The superseded fiducial is kept on the plot so that the change of fiducial
+# is visible rather than silent.
+pri_days, pri_aod = get(cfg['prior_fiducial'])
 
 # --- Zonal field for panel (b) ---
 zbase = base_dirs[cfg['zonal_phase']]
@@ -135,8 +138,10 @@ fig, (ax_a, ax_b) = plt.subplots(
 
 # --- (a) Global-mean AOD, ensemble + highlights + reference ---
 n_other = 0
+highlighted = {cfg['fiducial']['case'], cfg['calibration']['case'],
+               cfg['prior_fiducial']['case']}
 for case, (t, v) in series.items():
-    if case in (cfg['fiducial']['case'], cfg['calibration']['case']):
+    if case in highlighted:
         continue
     ax_a.plot(t0 + pd.to_timedelta(t, unit='D'), v, lw=0.5, color='0.78', zorder=1)
     n_other += 1
@@ -149,9 +154,12 @@ ax_a.axvspan(w0, w1, color='#DDE8F0', zorder=0, lw=0)
 ax_a.axhline(ref['value'], color='C0', lw=1.1, ls='--', zorder=3,
              label=ref['label'])
 
-ax_a.plot(cal_dates, cal_aod, lw=1.5, color='C2', zorder=4,
+pri_dates = t0 + pd.to_timedelta(pri_days, unit='D')
+ax_a.plot(pri_dates, pri_aod, lw=1.2, color='C3', ls='--', zorder=4,
+          label=cfg['prior_fiducial']['label'])
+ax_a.plot(cal_dates, cal_aod, lw=1.5, color='C2', zorder=5,
           label=cfg['calibration']['label'])
-ax_a.plot(fid_dates, fid_aod, lw=1.6, color='C3', zorder=5,
+ax_a.plot(fid_dates, fid_aod, lw=1.8, color='C3', zorder=6,
           label=cfg['fiducial']['label'])
 
 ax_a.set_xlabel('Date')
@@ -168,7 +176,7 @@ ax_a.legend(fontsize=6, frameon=False, loc='upper center',
 # --- (b) Zonal-mean AOD contour ---
 # Round the top of the scale up to a clean value so the colorbar carries
 # readable ticks rather than the raw data maximum's decimals.
-vmax = float(np.ceil(np.nanmax(zon_aod) * 100.0) / 100.0)
+vmax = float(np.ceil(np.nanmax(zon_aod) * 40.0) / 40.0)
 levels = np.linspace(0, vmax, 21)
 # vmax is rounded UP from the data maximum, so nothing is clipped and the
 # colorbar needs no extend arrow.

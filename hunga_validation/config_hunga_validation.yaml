@@ -15,14 +15,32 @@
 # main.tex sec:hungatonga. Do NOT reference the retired H2O-doubling target
 # here either.
 #
-# Current on-disk layout: base_dir/<case_name>/data/<subpath>
-base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga
+# Current on-disk layout: <base_dir>/<case_name>/data/<subpath>. Both phases
+# are listed because the fiducial moved into the phase-2 suite (see below);
+# the ensemble envelope is drawn from every case found under either root.
+base_dirs:
+  - /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga
+  - /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga_phase2
 
 # Fiducial case: highlighted line in panel (a) and the case shown in panel (b).
-case: exovolc_hunga_fid
-# Glob (relative to base_dir) matching every case whose global-mean time
+#
+# CHANGED 2026-07-31, from exovolc_hunga_fid (0.5 Tg SO2, 0.5 um). The
+# fiducial is now the case whose two inputs BOTH carry independent
+# observational support: 1.0 Tg SO2, the explicit lower bound of Sellitto et
+# al. (2024)'s IASI retrieval, and Reff = 0.4 um, the grown-aerosol size
+# measured by SAGE III/ISS and CALIOP (0.35-0.45 um). Neither is inferred
+# from an optical-depth budget, which is what distinguishes this from
+# adopting the aerosol-derived sulfur masses of Legras et al. (2022). Its
+# peak global-mean AOD of ~0.0138 is an OUTPUT of those two choices, not a
+# target they were selected to hit -- see main.tex sec:hungatonga.
+case: exovolc_hunga_r0.4_so2_1.0tg
+# Legend label for the highlighted case. Kept here rather than hardcoded in
+# the script, which is how the previous fiducial's label survived a change of
+# fiducial and briefly mislabelled the figure.
+case_label: 'Fiducial (1.0 Tg SO$_2$, $R_{\mathrm{eff}} = 0.4~\mu$m)'
+# Glob (relative to each base_dir) matching every case whose global-mean time
 # series is drawn faintly behind the fiducial in panel (a), to show the full
-# sweep sensitivity envelope (20 cases total, including the fiducial).
+# sweep sensitivity envelope (28 cases across both phases).
 case_glob: exovolc_hunga_*
 
 subpath_timeseries: aod/aod_550nm_band.csv

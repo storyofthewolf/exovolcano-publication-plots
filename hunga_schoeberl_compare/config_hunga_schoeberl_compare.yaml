@@ -30,12 +30,16 @@ case_glob: 'exovolc_hunga_*'
 # Highlighted cases. fid is the observationally-grounded fiducial;
 # raikoke_equiv is the calibration control whose SO2 mass is NOT in dispute
 # and which therefore carries the quantitative comparison (see main.tex).
-fiducial:      {case: exovolc_hunga_fid,           phase: phase1, label: 'Fiducial, 0.5 Tg SO$_2$'}
+# Fiducial changed 2026-07-31 to the case whose SO2 mass and effective radius
+# both carry independent observational support (Sellitto 2024 retrieval lower
+# bound; SAGE III/ISS grown-aerosol size). See main.tex sec:hungatonga.
+fiducial:      {case: exovolc_hunga_r0.4_so2_1.0tg, phase: phase2, label: 'Fiducial, 1.0 Tg SO$_2$, 0.4 $\mu$m'}
+prior_fiducial: {case: exovolc_hunga_fid,           phase: phase1, label: 'Carn et al. (2022) mass, 0.5 Tg SO$_2$'}
 calibration:   {case: exovolc_hunga_raikoke_equiv, phase: phase2, label: 'Raikoke-equivalent, 1.5 Tg SO$_2$'}
 
 # Case shown in the zonal contour panel (b).
-zonal_case: exovolc_hunga_fid
-zonal_phase: phase1
+zonal_case: exovolc_hunga_r0.4_so2_1.0tg
+zonal_phase: phase2
 
 # First year only, matching the window requested for this comparison.
 n_days: 365
