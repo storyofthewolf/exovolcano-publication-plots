@@ -1,0 +1,49 @@
+# Config for hunga_zonal_level: zonal-mean constituent fields at fixed
+# altitude as latitude-time contours, on the basis Schoeberl et al. (2024,
+# JGR, 10.1029/2024JD041296) Figure 3 uses.
+#
+# Their Figure 3 caption, verbatim: "Constituent zonal mean fields. Part a,
+# aerosol extinction coefficient at 20 km from NASA OMPS-LP. Parts b-d MLS at
+# 25 km. Part b, water vapor, Part c delta ozone, Part c [sic] delta
+# temperature." We reproduce the two panels our scheme carries a prognostic
+# analog for: aerosol at 20 km and water vapor at 25 km. Ozone and
+# temperature are not attempted -- this scheme has no interactive ozone.
+#
+# UNITS -- the trap on this figure. CAM's Q is a MASS mixing ratio (kg/kg);
+# MLS reports water vapor as a VOLUME mixing ratio in ppmv. The conversion
+# multiplies by M_air/M_H2O = 28.97/18.02 = 1.6076. Omitting it understates
+# the model by ~38%, which would read as a model deficiency rather than a
+# unit error.
+#
+# The aerosol panel plots VOLCHZMD (sulfate mass density, g/cm3) rather than
+# an extinction coefficient in km^-1. These are proportional through the Mie
+# mass extinction coefficient at fixed particle size, so the SHAPE of the
+# latitude-time structure is comparable to Schoeberl's Figure 3a, but the
+# magnitudes are NOT on the same axis and must not be read against theirs.
+# Converting would require committing to a single Kext, which is exactly the
+# fixed-size assumption the manuscript flags as a limitation.
+
+base_dirs:
+  phase1: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga
+  phase2: /Users/wolfe/Desktop/projects/volcanos/remote_analysis/hunga_phase2
+
+subpath: data/zonal_level
+
+# Manuscript fiducial.
+fiducial: {case: exovolc_hunga_r0.4_so2_1.0tg, phase: phase2}
+# Dry-injection control, differenced from the water field to remove the
+# background seasonal cycle -- the same treatment the water-persistence
+# figure applies to the stratospheric mass.
+dry_control: {case: exovolc_hunga_h2o_none, phase: phase1}
+
+water_file:   Q_25km.csv
+aerosol_file: VOLCHZMD_20km.csv
+
+# kg/kg -> ppmv. M_air / M_H2O.
+mmr_to_vmr: 1.6076
+
+eruption_date: 2022-01-15
+# Schoeberl et al. (2024) plot 2022 through the end of 2023.
+xlim: [2022-01-01, 2024-01-01]
+
+outfile_stem: fig_hunga_zonal_level
