@@ -12,8 +12,9 @@ effect of the water is claimed or implied anywhere in this figure.
 
 Two panels:
 (a) Time series of the global stratospheric (p < strat_p_max_pa, default
-    68 hPa) excess H2O mass [Tg], differenced against the dry-injection
-    control case to remove the background seasonal cycle, one line per
+    68 hPa) excess H2O mass [Tg], differenced against a true no-eruption
+    control run (exovolc_hunga_control) to remove the unperturbed
+    stratospheric water background as a function of time, one line per
     water-mass sweep case (0, 50, 100, 146 Tg H2O), colorblind-safe palette,
     fiducial (146 Tg) drawn heaviest. This is the same quantity and pressure
     definition Zhou et al. (2026, their Fig. 1/4) use for the observed HEW
@@ -155,16 +156,21 @@ band_lo = cfg['band_alt_min_m']
 band_hi = cfg['band_alt_max_m']
 
 # --- Panel (a): global stratospheric excess H2O mass [Tg], all sweep cases ---
-# Differenced against the dry-injection control to remove the background
-# seasonal cycle, matching Zhou et al. (2026)'s HEW definition.
-dry_days, dry_mass_tg = strat_h2o_mass_tg(cfg['dry_control'])
-dry_series = pd.Series(dry_mass_tg, index=dry_days)
+# Differenced against a true no-eruption control run (exovolc_hunga_control),
+# which supplies the actual unperturbed stratospheric water as a function of
+# time, matching Zhou et al. (2026)'s HEW definition. This replaced the
+# dry-injection case exovolc_hunga_h2o_none, which still injects SO2 and so
+# carries its own aerosol-heating-driven water perturbation (see config).
+bg_case = cfg['background_control']
+bg_days, bg_mass_tg = strat_h2o_mass_tg_batch(
+    bg_case, cfg.get('background_control_batch'))
+bg_series = pd.Series(bg_mass_tg, index=bg_days)
 
 mass_series = {}   # case -> pd.Series indexed by days_since_start (Tg, excess)
 for entry in cfg['cases']:
     c = entry['case']
     days, mass_tg = strat_h2o_mass_tg(c)
-    excess_tg = mass_tg - dry_series.reindex(days).values
+    excess_tg = mass_tg - bg_series.reindex(days).values
     mass_series[c] = pd.Series(excess_tg, index=days)
 
 ts_frame = pd.DataFrame(mass_series).sort_index()
@@ -192,7 +198,7 @@ fid_alt_km = fid_alt_m / 1000.0
 # Diagnostics
 # ---------------------------------------------------------------------------
 print(f"Global stratospheric H2O mass: p < {STRAT_P_MAX_PA/100:.0f} hPa, "
-      f"dry-control-differenced (control = {cfg['dry_control']})")
+      f"no-eruption-control-differenced (control = {bg_case})")
 print()
 print("Panel (a) sweep diagnostics (global stratospheric excess H2O mass):")
 for entry in cfg['cases']:
@@ -275,7 +281,7 @@ for entry, color in zip(cfg['cases'], sweep_colors):
 if fid_overlay:
     ov_days, ov_mass = strat_h2o_mass_tg_batch(
         fid_overlay['case'], fid_overlay.get('batch'))
-    ov_excess = ov_mass - dry_series.reindex(ov_days).values
+    ov_excess = ov_mass - bg_series.reindex(ov_days).values
     ov_dates = t0 + pd.to_timedelta(ov_days, unit='D')
     ax_ts.plot(ov_dates, ov_excess, lw=1.0, color='#009E73', ls='-',
                zorder=6, label=fid_overlay['label'])

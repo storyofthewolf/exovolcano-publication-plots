@@ -37,7 +37,24 @@ band_alt_max_m: 40000.0
 strat_p_max_pa: 6800.0   # 68 hPa, matching Zhou et al. (2026)'s definition
 g_const: 9.80665
 r_earth_m: 6371000.0
-dry_control: exovolc_hunga_h2o_none
+
+# Background subtracted from every case to form the "excess".
+#
+# UPDATED 2026-08-04: this is now exovolc_hunga_control, a true no-eruption run
+# (no SO2, no H2O), which gives the actual unperturbed stratospheric water as a
+# function of time. It replaces exovolc_hunga_h2o_none, the dry-INJECTION case,
+# which still injects the full SO2 mass; the resulting aerosol heating perturbs
+# stratospheric water transport, so it was never a clean background. The two
+# backgrounds differ by up to ~15 Tg (mean ~2 Tg) over the run, which is small
+# against the ~155 Tg peak but is a real bias, and it is what made the 0 Tg
+# H2O sweep member sit at exactly zero by construction. With the true control
+# that member now shows its own (nonzero, SO2-driven) response, which is the
+# honest result.
+#
+# exovolc_hunga_h2o_none is retained as the 0 Tg member of the water sweep
+# below -- it belongs there, since the sweep varies injected H2O at fixed SO2.
+background_control: exovolc_hunga_control
+background_control_batch: hunga_phase2
 
 # Case drawn heaviest in panel (a) and used alone for panel (b).
 #
