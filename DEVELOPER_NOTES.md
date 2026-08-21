@@ -144,6 +144,46 @@ Keep this practice: print the numbers, check them against an independent
 calculation, and do not silently adjust a script until a discrepancy is
 understood.
 
+### TRAPPIST-1 e verified numbers (2026-08-19/20)
+
+Peak global-mean 550 nm AOD, `ben2_suite1` / `hab2_suite1`:
+
+| Case | ben2 (dry) | hab2 (aquaplanet) |
+|---|---|---|
+| Tambora (60 Tg SO₂) | 0.1351 @ day 518 | 0.3287 @ day 33 |
+| Pinatubo (18 Tg SO₂) | 0.0645 @ day 473 | 0.1033 @ day 33 |
+| Hunga (1 Tg SO₂) | 0.0115 @ day 152 | 0.0085 @ day 46 |
+| Tambora 10× | 1.1115 @ day 1652 | 4.0666 @ day 37 |
+| Tambora 100× | 1.3864 @ day 915 | 41.9587 @ day 43 |
+
+**The ben2 column past day ~250 is contaminated** by the suspected spurious
+water source; those peak times and magnitudes are recorded here as *what the
+runs produced*, not as trustworthy physics. See CLAUDE.md scope constraints.
+
+Fraction of injected sulfur reaching aerosol at the aerosol's own peak, which
+is the diagnostic for the water-limited conversion:
+
+| Case | ben2 | hab2 |
+|---|---|---|
+| Tambora (1 Tg H₂O injected) | 19.5% | 47.3% |
+| Tambora 10× (1 Tg H₂O) | 16.0% | 58.5% |
+| Hunga (146 Tg H₂O) | 99.1% | 73.5% |
+
+Hunga is the controlled test: it carries far more water than its 0.28 Tg
+stoichiometric need and converts 99.1% **on the dry planet**, so water
+availability rather than dryness gates the conversion.
+
+Stoichiometry, from the compiled `exo_simplevolc.F90`
+(`SO2 + H2O + 1/2 O2 -> H2SO4`): 18.015/64.06 = 0.2812 kg H₂O per kg SO₂.
+Demands are 16.9 Tg (Tambora), 5.1 Tg (Pinatubo), 0.28 Tg (Hunga), 168.7 Tg
+(Tambora 10×), 1687.3 Tg (Tambora 100×).
+
+Water-burden sanity check, `TMQ` × planet area (4.22414e14 m²), day 1 against
+injected: Hunga 144.6 vs 146 Tg, Hunga 10× 1420 vs 1460 Tg, Hunga 100× 7111 vs
+14,600 Tg (reaching full mass by day 5). The ben2 **control**, which injects
+nothing, must stay ~0 and does not — it reaches 122.5 Tg by year 6. That
+discrepancy is the open bug.
+
 ## Dependencies
 
 `pandas`, `matplotlib`, `pyyaml`, `numpy`.

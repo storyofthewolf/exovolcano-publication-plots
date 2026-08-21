@@ -1,0 +1,116 @@
+# Config for the four TRAPPIST-1e publication figures.
+#
+# These are the figures selected, from the full 28-case ben2/hab2 diagnostic
+# sweep, as the ones carrying the science the paper is actually about: what a
+# large eruption does to a rocky M-dwarf planet, and how that depends on
+# whether the planet has surface water.
+#
+#   fig_trappist_removal      -- THE headline result. Aerosol lifetime and
+#                                magnitude scaling split into two regimes by
+#                                the presence of a surface water reservoir.
+#   fig_trappist_water_plume  -- The Hunga template's stratospheric water
+#                                plume: a coherent multi-year ascent on the dry
+#                                world, unrecoverable on the moist one.
+#   fig_trappist_sensitivity  -- What the eruption parameters control, and what
+#                                they do not, on each atmosphere.
+#   fig_trappist_vertical     -- Where the aerosol actually sits, which is what
+#                                a transmission spectrum records.
+#
+# SCOPE. ben2 and hab2 only. The ben1/hab1 suites were compiled with pure CO2
+# when they were specified as N2 + 400 ppm CO2, so those 28 cases are invalid
+# and are being rerun. Everything here is therefore a DRY-SURFACE versus
+# OCEAN-SURFACE contrast at FIXED pure-CO2 composition. Both atmospheres are
+# 1 bar CO2; they differ in surface water alone. That is a cleaner control than
+# the ben1/ben2 pairing would have provided, but it is not the composition
+# contrast the current Section 4 text is written around.
+#
+# NO OBSERVATIONAL REFERENCE LINE APPEARS ON ANY PANEL. There is no measured
+# TRAPPIST-1e volcanic aerosol or stratospheric water abundance. Importing a
+# band from the Earth validation cases would silently carry a terrestrial
+# calibration onto a plot of a different planet.
+#
+# THE 100x RUNG IS NOT A CLEAN CONTROL. Those cases inject over 48 h rather
+# than 24 h, because at 100x fiducial mass the per-timestep tendency into a
+# single 4x5 column exceeds what the dynamics can absorb. The injected MASS is
+# as labeled; the injection RATE is halved. Any statement about the magnitude
+# ladder must carry that caveat, and the figure marks the rung.
+
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+
+batches:
+  ben2: ben2_suite1
+  hab2: hab2_suite1
+
+atm_label:
+  ben2: "ben2: dry land, 1 bar CO$_2$"
+  hab2: "hab2: aquaplanet, 1 bar CO$_2$"
+
+subpath_aod:        aod/aod_550nm_band.csv
+subpath_aod_zonal:  aod/aod_zonal_550nm_band.csv
+subpath_q_profile:  profiles/Q.csv
+subpath_hz_profile: profiles/VOLCHZMD.csv
+subpath_so2_scalar: scalar/SO2.csv
+subpath_hz_scalar:  scalar/VOLCHZMD.csv
+
+outfile_removal:     fig_trappist_removal
+outfile_water:       fig_trappist_water_plume
+outfile_sensitivity: fig_trappist_sensitivity
+outfile_vertical:    fig_trappist_vertical
+
+# --- Planet constants -------------------------------------------------------
+# From each case's compiled SourceMods/src.share/exoplanet_mod.F90 on discover
+# (2026-08-19), NOT from the stale exovolc_ben.yaml / exovolc_hab.yaml in
+# exovolcano-analysis, which have r_air crossed between the suites. ben2 and
+# hab2 are the same planet and the same composition, so one set covers both.
+g_const:  9.1233        # exo_surface_gravity (m/s^2)
+r_planet: 5797810.2     # exo_planet_radius (m)
+r_air:    188.924269    # R/mw, pure CO2, mw = 44.0095 (J/kg/K)
+
+# Diagnostic stratospheric cutoff, carried over from the Earth Hunga figures
+# for definitional consistency across the paper. It asserts nothing about where
+# the tropopause of these atmospheres lies.
+strat_p_max_pa: 6800.0
+
+control: control
+
+# Injected masses, transcribed from experiment_yamls/{ben2,hab2}_suite1.yaml,
+# which are the authority for what was actually run.
+templates:
+  tambora:  {so2_tg: 60.0,  h2o_tg: 1.0,   press_mb: 50.0, k_days: 35.0}
+  pinatubo: {so2_tg: 18.0,  h2o_tg: 1.0,   press_mb: 40.0, k_days: 35.0}
+  hunga:    {so2_tg: 1.0,   h2o_tg: 146.0, press_mb: 10.0, k_days: 28.0}
+
+# Magnitude ladder for the scaling panel. Tambora scales SO2; Hunga scales H2O.
+ladder_tambora:
+  - {key: tambora,      so2_tg: 60.0,   mult: 1,   duration_h: 24}
+  - {key: tambora_10x,  so2_tg: 600.0,  mult: 10,  duration_h: 24}
+  - {key: tambora_100x, so2_tg: 6000.0, mult: 100, duration_h: 48}
+ladder_hunga:
+  - {key: hunga,      h2o_tg: 146.0,   mult: 1,   duration_h: 24}
+  - {key: hunga_10x,  h2o_tg: 1460.0,  mult: 10,  duration_h: 24}
+  - {key: hunga_100x, h2o_tg: 14600.0, mult: 100, duration_h: 48}
+
+# Sensitivity axes for the third figure.
+k_ladder:
+  - {key: "tambora_k2.5", k_days: 2.5,   label: "$K$ = 2.5 d"}
+  - {key: tambora,        k_days: 35.0,  label: "$K$ = 35 d"}
+  - {key: tambora_k250,   k_days: 250.0, label: "$K$ = 250 d"}
+
+daynight_pairs:
+  - {day: tambora,  night: tambora_night,  label: Tambora}
+  - {day: pinatubo, night: pinatubo_night, label: Pinatubo}
+  - {day: hunga,    night: hunga_night,    label: Hunga}
+
+scrit_pair: {base: tambora, probe: tambora_scrit5, label: "$S_{crit}$ = 5"}
+
+# Case used for the vertical-structure and water-plume figures.
+vertical_case: tambora
+water_case: hunga
+
+xlim_days: [0, 2190]
+xlim_days_short: [0, 730]
+contour_alt_max_km: 47.0
+
+# AOD floor for log axes. Below this the aerosol is radiatively irrelevant and
+# the tail runs to ~1e-22, which compresses the meaningful range to nothing.
+aod_floor: 1.0e-4

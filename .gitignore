@@ -5,3 +5,6 @@ __pycache__/
 *.pdf
 *.eps
 .DS_Store
+
+# Rasterized previews from pdftoppm (throwaway; regenerate as needed)
+*-1.png

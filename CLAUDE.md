@@ -122,6 +122,10 @@ hunga_zonal_level/
 hunga_water_persistence/
 hunga_plume_linearity/
 
+trappist_removal_regimes/       ← TRAPPIST-1 e publication figures (2026-08)
+trappist_sulfur_budget/         ← TRAPPIST-1 e mechanism figures (2026-08)
+trappist_diagnostics/           ← exploratory quad; NOT a manuscript source
+
 aod_timeseries/                 ← stale, old path convention
 aod_zonal_contour/              ← stale
 aod_twopanel/                   ← stale; superseded by tambora_validation
@@ -141,6 +145,9 @@ What each current figure is:
 | `hunga_zonal_level` | Latitude–time fields at fixed altitude on the basis of Schoeberl et al. (2024) Fig. 3: sulfate at 20 km, water-vapor anomaly at 25 km. |
 | `hunga_water_persistence` | Stratospheric excess H₂O mass (p < 68 hPa, differenced against the no-eruption control `exovolc_hunga_control`) across the water sweep with the Zhou et al. (2026) decay fit, plus a height–time anomaly Hovmöller. |
 | `hunga_plume_linearity` | Model-behavior diagnostic: plume-core AOD does **not** scale linearly with injected SO₂, though the global mean does exactly. |
+| `trappist_removal_regimes` | The four TRAPPIST-1 e publication figures: removal regimes (AOD lifetime + magnitude scaling + year-6 retention), stratospheric water plume, eruption-parameter sensitivities, and height–time aerosol structure. |
+| `trappist_sulfur_budget` | Mechanism figures for the water-limited conversion: sulfur partitioned into SO₂ / H₂SO₄ gas / aerosol in Tg S, and the ben2 water burden against each eruption's stoichiometric water demand. |
+| `trappist_diagnostics` | Exploratory quad run first against the fresh ben2/hab2 output. Superseded by the two folders above; keep as a scratch reference, do not source manuscript figures from it. |
 
 ### Scope constraints encoded in the Hunga configs
 
@@ -178,6 +185,37 @@ its reference case rather than the manuscript fiducial: there it is the 146 Tg
 member of a sweep that varies water at *fixed* SO₂ and Reff, and substituting a
 case differing in three parameters would destroy that control. The manuscript
 fiducial is drawn as a separate overlay instead.
+
+### Scope constraints encoded in the TRAPPIST-1 configs
+
+- **ben2 and hab2 only.** The ben1/hab1 suites were compiled with pure CO₂ where
+  N₂ + 400 ppm CO₂ was specified, so those 28 cases are invalid and are being
+  rerun. Everything here is a dry-vs-wet **surface** contrast at **fixed**
+  composition. Do not add ben1/hab1 cases to these configs until they rerun.
+- **No observational reference line belongs on any TRAPPIST-1 panel.** There is
+  no measured TRAPPIST-1 e volcanic aerosol or stratospheric water abundance.
+  Importing a band from the Earth validation cases would carry a terrestrial
+  calibration onto a different planet.
+- **The 100× rung is not a clean ladder member.** Those cases inject over 48 h
+  rather than 24 h; the injected mass is as labeled but the rate is halved.
+  `trappist_removal_regimes` rings that point in panel (b); keep the marking.
+- **Planet constants come from the compiled `exoplanet_mod.F90`**, not from the
+  stale `exovolc_ben.yaml` / `exovolc_hab.yaml` in exovolcano-analysis, which
+  have `r_air` crossed between the suites.
+- **ben2 output after ~day 250 is contaminated** by a suspected spurious water
+  source (the dry-atmosphere controls gain ~122 Tg of water from an initial
+  `Q ≡ 0`). Because the conversion consumes water, that drift feeds late aerosol
+  production. `trappist_sulfur_budget` shades the affected window rather than
+  cropping it. Treat any ben2 quantity past day ~250 as unusable until the
+  underlying bug is resolved.
+- **Use `TMQ` × planet area for water burden**, not a `profiles/Q.csv` column
+  integral. TMQ recovers the injection accurately (144.6 Tg on day 1 against
+  146 Tg injected for Hunga).
+- **Convert sulfur species to Tg of S** via the S mass fraction (SO₂ 0.5005,
+  H₂SO₄ and sulfate aerosol 0.3269) so the three curves are comparable and the
+  budget closes. H₂SO₄ gas always sits at ~1e-16 Tg S: condensation
+  (`TAU_AER_CONV` = 1800 s) far outpaces its production, so it never
+  accumulates. That flat near-zero line is correct, not a missing field.
 
 Each `plot_*.py` inserts the project root into `sys.path` so `pub_data` is importable regardless of invocation directory.
 

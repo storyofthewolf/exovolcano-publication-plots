@@ -35,6 +35,12 @@ Current (2026-07), built against the current data layout:
 - **pinatubo_validation/** — global-mean AOD against WACCM and GloSSAC reference values, plus a Hovmoller
 - **pinatubo_sensitivity/** — 2x2 one-at-a-time parameter sweeps about the fiducial
 
+TRAPPIST-1 e (2026-08), built against the `ben2_suite1` / `hab2_suite1` output:
+
+- **trappist_removal_regimes/** — the four publication figures: aerosol removal regimes, stratospheric water plume, eruption-parameter sensitivities, height-time aerosol structure
+- **trappist_sulfur_budget/** — sulfur partitioning in Tg S, and the ben2 water burden against each eruption's stoichiometric water demand
+- **trappist_diagnostics/** — exploratory quad, superseded by the two above; not a source of manuscript figures
+
 Older folders (`aod_timeseries/`, `aod_zonal_contour/`, `aod_twopanel/`, `sulfur_burden/`) predate a change in the `remote_analysis` directory layout and no longer resolve their input paths. Keep them as style references; see DEVELOPER_NOTES.md before reusing them.
 
 ## Output formats

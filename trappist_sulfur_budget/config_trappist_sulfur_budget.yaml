@@ -1,0 +1,108 @@
+# Config for the TRAPPIST-1e sulfur-budget and water-burden figures.
+#
+# PURPOSE. These two figures test a specific mechanistic hypothesis about why
+# peak AOD is LOWER on the dry ben2 atmosphere than on the moist hab2 one,
+# despite identical injected SO2:
+#
+#   The SO2 -> H2SO4 conversion CONSUMES water. In the compiled scheme
+#   (exo_simplevolc.F90, exo_simplevolc_gas_tend, verified against the source
+#   actually built into exovolc_ben2_tambora, md5 dbf7c569, dated 2026-08-03)
+#   the reaction is
+#
+#       SO2 + H2O + 1/2 O2 -> H2SO4
+#
+#   and the per-timestep SO2 loss is explicitly CLAMPED by the available water:
+#
+#       so2_loss_max  = q_SO2 * (1 - exp(-K*dt))
+#       h2o_needed    = so2_loss_max * (MW_H2O / MW_SO2)
+#       h2o_available = max(0, q_H2O - 1e-20)
+#       if (h2o_needed > h2o_available) so2_loss = h2o_available / (MW_H2O/MW_SO2)
+#
+#   So on a desiccated atmosphere the conversion is water-limited by
+#   construction, and SO2 should sit unconverted while H2SO4 and aerosol stay
+#   suppressed.
+#
+# THE STOICHIOMETRIC ARITHMETIC, which motivates the figures:
+#   MW_H2O/MW_SO2 = 18.015/64.06 = 0.2812 kg H2O per kg SO2.
+#     Tambora    60 Tg SO2 needs   16.9 Tg H2O
+#     Pinatubo   18 Tg SO2 needs    5.1 Tg H2O
+#     Tamb 10x  600 Tg SO2 needs  168.7 Tg H2O
+#     Tamb 100x 6000 Tg SO2 needs 1687.3 Tg H2O
+#   The Tambora/Pinatubo templates inject only 1.0 Tg H2O, and the whole
+#   unperturbed ben2 stratosphere holds ~3.3 Tg. hab2's holds ~2.4e4 Tg.
+#   ben2 is therefore short by a factor of ~4 at 1x and ~400 at 100x, while
+#   hab2 is effectively unlimited.
+#
+# NOTE this is a DIFFERENT water pathway from the one Section 3 established as
+# absent. There is still no H2O-dependent SULFATE/AEROSOL pathway (H2SO4
+# saturation is temperature-only, K is a prescribed constant), which is why the
+# Earth Hunga water sweep left peak AOD flat. What exists here is a
+# stoichiometric REACTANT limitation on the gas-phase conversion, which only
+# bites when water is scarce -- i.e. never on Earth or on hab2, but severely on
+# ben2. The two statements are consistent; keep both straight when writing.
+
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+
+batches:
+  ben2: ben2_suite1
+  hab2: hab2_suite1
+
+atm_label:
+  ben2: "ben2: dry land, 1 bar CO$_2$"
+  hab2: "hab2: aquaplanet, 1 bar CO$_2$"
+
+subpath_so2:   scalar/SO2.csv
+subpath_h2so4: scalar/H2SO4.csv
+subpath_aer:   scalar/VOLCHZMD.csv
+subpath_tmq:   scalar/TMQ.csv
+subpath_aod:   aod/aod_550nm_band.csv
+subpath_q_profile: profiles/Q.csv
+
+outfile_sulfur: fig_trappist_sulfur_budget
+outfile_water:  fig_trappist_ben2_water_burden
+
+# --- Planet constants -------------------------------------------------------
+# From the compiled SourceMods/src.share/exoplanet_mod.F90 (2026-08-19).
+g_const:  9.1233
+r_planet: 5797810.2
+
+# --- Molecular weights, matching exo_simplevolc.F90 exactly ------------------
+# The scheme uses these to build MASS_RATIO_H2SO4_SO2 and MASS_RATIO_H2O_SO2.
+mw_so2:   64.06
+mw_h2so4: 98.08
+mw_h2o:   18.015
+mw_s:     32.06
+
+# The condensed-aerosol tracer VOLCHZMD is sulfate aerosol mass. Its sulfur
+# fraction is taken as that of H2SO4, consistent with how the scheme forms it
+# by condensing H2SO4 gas. rho_aerosol = 1.84 in the analysis YAML.
+aerosol_is_h2so4: true
+
+control: control
+
+# Cases for the sulfur-budget figure. Chosen to span the water-limitation
+# argument: the 1x/10x/100x Tambora ladder is where the shortfall grows from
+# ~4x to ~400x, and Hunga is the one template whose own injected water
+# (146 Tg) far exceeds its stoichiometric need (0.28 Tg).
+sulfur_cases:
+  - {key: tambora,      label: "Tambora (60 Tg SO$_2$, 1 Tg H$_2$O)",   need_h2o_tg: 16.87}
+  - {key: tambora_10x,  label: "Tambora 10$\\times$ (600 Tg SO$_2$)",   need_h2o_tg: 168.73}
+  - {key: hunga,        label: "Hunga (1 Tg SO$_2$, 146 Tg H$_2$O)",    need_h2o_tg: 0.28}
+
+# Water-burden figure: ben2 only, per the request. TMQ is total precipitable
+# water, a COLUMN quantity in kg/m2; it is converted to a global mass in Tg by
+# multiplying by the planet's surface area. Note TMQ is the WHOLE column, so on
+# ben2 it is dominated by the injected/volcanic water rather than by any
+# background hydrological cycle -- which is precisely why it is diagnostic here.
+water_cases:
+  - {key: control,      label: "Control (no eruption)"}
+  - {key: tambora,      label: "Tambora (1 Tg H$_2$O)"}
+  - {key: pinatubo,     label: "Pinatubo (1 Tg H$_2$O)"}
+  - {key: tambora_10x,  label: "Tambora 10$\\times$ (1 Tg H$_2$O)"}
+  - {key: tambora_100x, label: "Tambora 100$\\times$ (1 Tg H$_2$O)"}
+  - {key: hunga,        label: "Hunga (146 Tg H$_2$O)"}
+  - {key: hunga_10x,    label: "Hunga 10$\\times$ (1460 Tg H$_2$O)"}
+  - {key: hunga_100x,   label: "Hunga 100$\\times$ (14600 Tg H$_2$O)"}
+
+xlim_days: [0, 2190]
+xlim_days_short: [0, 365]

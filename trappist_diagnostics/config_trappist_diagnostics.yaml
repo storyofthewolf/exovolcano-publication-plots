@@ -1,0 +1,97 @@
+# Config for the TRAPPIST-1e diagnostic quad: the four exploratory plots that
+# characterize the ben2/hab2 eruption suites before any publication figure is
+# committed. Produced from batch job 57986527 (analysis run 2026-08-19).
+#
+# WHAT THIS COVERS -- AND WHAT IT DELIBERATELY DOES NOT
+# ----------------------------------------------------
+# Only the ben2 and hab2 suites (28 cases) appear here. The ben1 and hab1
+# suites were compiled with the SAME exoplanet_mod.F90 as ben2/hab2 -- 1 bar
+# pure CO2 -- when they were specified as 1 bar N2 + 400 ppm CO2. Those 28
+# cases are INVALID and are being rerun; they must not be added to this config
+# or referenced from its output. ben2/hab2 are pure CO2 by specification and
+# are valid exactly as run.
+#
+# Consequence for the manuscript: Section 4 currently leads with ben1 as the
+# canonical atmosphere, and ben1 does not yet exist in valid form. Every
+# result drawn from this config is a ben2 (dry, pure CO2) versus hab2 (moist,
+# pure CO2) contrast -- the dry/wet axis at FIXED composition, which is a
+# cleaner control than the ben1/ben2 pairing would have been, but is not the
+# composition contrast the current Section 4 text describes.
+#
+# The 100x rung is NOT uniform across the suite: ben2/hab2 100x cases use
+# volc_duration 48 h rather than 24 h, because at 100x fiducial mass the
+# per-timestep tendency into one 4x5 column exceeds what the dynamics can
+# absorb. The injected MASS is as labeled; the injection RATE is halved. Any
+# comparison across the magnitude ladder must say so.
+
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+
+# The two valid suites. Directory names as fetch_exovolc.py lays them down:
+# <local_base>/<batch>/<case>/data/<subpath>
+batches:
+  ben2: ben2_suite1
+  hab2: hab2_suite1
+
+subpath_aod:       aod/aod_550nm_band.csv
+subpath_q_scalar:  scalar/Q.csv
+subpath_q_profile: profiles/Q.csv
+subpath_hz_profile: profiles/VOLCHZMD.csv
+
+outfile_aod:      fig_trappist_aod_timeseries
+outfile_water:    fig_trappist_water_timeseries
+outfile_contour:  fig_trappist_profile_contours
+
+# --- Planet constants -------------------------------------------------------
+# Read from each case's compiled SourceMods/src.share/exoplanet_mod.F90 on
+# discover (2026-08-19), NOT from the stale exovolc_ben.yaml/exovolc_hab.yaml
+# in exovolcano-analysis, which have r_air crossed between the suites.
+# ben2 and hab2 are the same planet and the same composition, so one set of
+# constants covers both.
+g_const:  9.1233        # exo_surface_gravity (m/s^2)
+r_planet: 5797810.2     # exo_planet_radius (m)
+r_air:    188.924269    # R/mw, pure CO2, mw = 44.0095 (J/kg/K)
+
+# Stratospheric cutoff for the column-water diagnostic. Retained from the
+# Hunga Earth figures (68 hPa, Zhou et al. 2026's definition) purely as a
+# consistent definition across the paper; it carries NO claim that 68 hPa is
+# the tropopause of these atmospheres. TRAPPIST-1e's thermal structure differs
+# and the level is diagnostic, not physical, here.
+strat_p_max_pa: 6800.0
+
+# Run length: 6 model years, daily instantaneous output (h1 tape).
+xlim_days: [0, 2190]
+# Contour panels focus on the first two years, where the signal lives.
+xlim_days_contour: [0, 730]
+
+# Vertical extent for the contour panels (km). Model top is ~47 km here, well
+# below the ~75 km of the Earth cases -- these are cold, compact atmospheres.
+contour_alt_max_km: 47.0
+
+# --- Cases ------------------------------------------------------------------
+# Injected masses and parameters are transcribed from the experiment matrices
+# (description_paper/experiment_yamls/{ben2,hab2}_suite1.yaml), which are the
+# authority. Labels name the template and what distinguishes the case.
+control: control
+
+cases:
+  - {key: control,          label: "Control (no eruption)",        group: control}
+  - {key: tambora,          label: "Tambora (60 Tg SO$_2$)",       group: core}
+  - {key: pinatubo,         label: "Pinatubo (18 Tg SO$_2$)",      group: core}
+  - {key: hunga,            label: "Hunga (146 Tg H$_2$O)",        group: core}
+  - {key: tambora_night,    label: "Tambora, nightside",           group: daynight}
+  - {key: pinatubo_night,   label: "Pinatubo, nightside",          group: daynight}
+  - {key: hunga_night,      label: "Hunga, nightside",             group: daynight}
+  - {key: tambora_10x,      label: "Tambora 10$\\times$",          group: strength}
+  - {key: tambora_100x,     label: "Tambora 100$\\times$",         group: strength}
+  - {key: hunga_10x,        label: "Hunga 10$\\times$",            group: strength}
+  - {key: hunga_100x,       label: "Hunga 100$\\times$",           group: strength}
+  - {key: "tambora_k2.5",   label: "Tambora, $K$ = 2.5 d",         group: chem}
+  - {key: tambora_k250,     label: "Tambora, $K$ = 250 d",         group: chem}
+  - {key: tambora_scrit5,   label: "Tambora, $S_{crit}$ = 5",      group: chem}
+
+# The case used alone for the vertical-profile contour panels. Tambora is the
+# high-sulfur template and carries the clearest aerosol signal; its water is a
+# token 1e9 kg, so the Q panel of the contour figure uses Hunga instead, whose
+# 1.46e11 kg H2O is the water perturbation the figure is meant to show.
+contour_case_haze:  tambora
+contour_case_water: hunga
