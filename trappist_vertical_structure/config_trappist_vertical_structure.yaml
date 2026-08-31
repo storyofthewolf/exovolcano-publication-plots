@@ -41,8 +41,8 @@
 # so a raw-Q panel of an eruption is visually identical to its control and shows
 # nothing. Differencing against each atmosphere's own no-eruption control is
 # what makes the injected water visible. Consequences to respect:
-#   - The control panel of the water row is then identically zero BY
-#     CONSTRUCTION and is drawn as such; it is not a measurement.
+#   - The control is therefore not plotted as a case of its own; see the
+#     `cases` block below.
 #   - The control is an independent realization, so its internal variability
 #     does NOT cancel in the difference. On the moist atmospheres the anomaly
 #     therefore carries a genuine noise floor and goes both positive and
@@ -83,13 +83,21 @@ subpath_hz_profile: profiles/VOLCHZMD.csv
 
 outfile_stem: fig_trappist_vertical   # suffixed with _<atm>
 
-# Representative cases, left to right. `control` carries no eruption and is
-# the background against which the others are read.
+# Representative cases, left to right: both templates at both ends of the
+# magnitude ladder, so the sulfur-rich and water-rich injections can be read
+# against each other at fixed magnitude and down each column at fixed template.
+#
+# The `control` case is deliberately NOT listed here. It is still loaded --
+# it supplies the moist atmospheres' anomaly baseline and their noise floor --
+# but it is not drawn, because its own panels carry no information: its aerosol
+# is identically zero by construction on every atmosphere, and in the water row
+# it is the reference the anomaly is taken against, hence identically zero
+# there too. Re-adding it would restore four blank panels.
 cases:
-  - {key: control,      label: "control (no eruption)"}
   - {key: tambora,      label: "Tambora 1$\\times$"}
   - {key: tambora_100x, label: "Tambora 100$\\times$ (48 h inj.)"}
   - {key: hunga,        label: "Hunga 1$\\times$"}
+  - {key: hunga_100x,   label: "Hunga 100$\\times$ (48 h inj.)"}
 
 # Altitude ceiling. `auto` fits each figure to its own model top, which differs
 # by suite (ben2/hab2 reach ~47-50 km, ben1/hab1 ~71 km); a fixed value leaves a
