@@ -115,7 +115,13 @@ xlim_years: [0, 6]
 # The water row is symmetric-log (positive and negative anomalies on one
 # diverging scale); q_decades sets how far below the peak |anomaly| the
 # logarithmic part extends before it goes linear into zero.
-q_decades:   5.0    # moist atmospheres (symlog anomaly)
+q_decades:   5.0    # moist atmospheres (unused since the sigma normalization)
+
+# Moist water row is plotted in units of each LEVEL own control sigma, so the
+# colour limits are fixed and mean the same thing at every altitude: linear
+# within +/-1 sigma (indistinguishable from internal variability, rendered
+# near-white), logarithmic out to +/-sigma_max.
+sigma_max: 1000.0
 hz_decades:  4.0
 
 # The dry atmospheres need their own, much wider water range. There the water
