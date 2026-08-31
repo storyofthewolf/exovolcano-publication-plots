@@ -129,12 +129,12 @@ xlim_years: [0, 6]
 # stratospheric water, hab2 ~21,600 Tg); one shared threshold would be tuned to
 # one of them and wrong for the other.
 q_decades:   5.0    # retained for the dry fallback path
-q_linthresh_by_atm:
-  hab1: 1.0e-8
-  hab2: 1.0e-6
-q_vmax_by_atm:
-  hab1: 1.0e-3
-  hab2: 1.0e-2
+# Atmospheres whose WATER row needs a per-panel scale. The dry pair do,
+# because their four cases span ~13 orders of magnitude and no shared scale
+# renders them together. The moist pair do not: their water is dominated by a
+# common ambient reservoir, so a shared scale is both possible and the more
+# informative choice there.
+per_panel_water_atm: [ben1, ben2]
 hz_decades:  4.0
 
 # The dry atmospheres need their own, much wider water range. There the water

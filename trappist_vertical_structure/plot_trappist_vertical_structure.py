@@ -5,25 +5,24 @@ sulfate aerosol for the TRAPPIST-1 e suites.
 Writes ONE figure per atmosphere (ben1, ben2, hab1, hab2), each a 2 x N grid of
 filled contours:
 
-    row 1   water vapor ANOMALY   Q - Q_control   [kg/kg]
-    row 2   sulfate aerosol       VOLCHZMD        [kg/m3]
+    row 1   water vapor      Q         [kg/kg]
+    row 2   sulfate aerosol  VOLCHZMD  [kg/m3]
 
-with time (years since eruption) on x and altitude (km) on y. The profiles are
-GLOBAL MEANS -- exovolcano-analysis already took the area-weighted horizontal
-average when it wrote profiles/*.csv -- so these show the global column
-evolving, not a resolved plume.
+with time (years since eruption) on x and altitude (km) on y. Both rows plot the
+RAW field in native units on a logarithmic scale. Nothing is differenced against
+a control: the panels show what each atmosphere actually holds.
 
-The water row is differenced against each atmosphere's own no-eruption control
-because on the moist atmospheres the ambient column exceeds the injected plume
-by five or more orders of magnitude, and a raw-Q panel of an eruption is
-visually identical to its control. It is drawn on a symmetric-log diverging
-scale, the anomaly being signed. On the dry atmospheres the control holds
-Q == 0 identically, so there the anomaly and the raw field coincide exactly.
+The profiles are GLOBAL MEANS -- exovolcano-analysis already took the
+area-weighted horizontal average when it wrote profiles/*.csv -- so these show
+the global column evolving, not a resolved plume.
 
-Colour scales are shared across the panels of a row WITHIN a figure, so cases
-are directly comparable there, and are NOT shared between figures, because the
-four atmospheres differ in background water by many orders of magnitude and a
-common scale would render the dry pair blank.
+Scales are shared across the panels of a row WITHIN a figure, so cases are
+directly comparable there, and are NOT shared between figures, because the four
+atmospheres differ in background water by many orders of magnitude and a common
+scale would render the dry pair blank. The one exception is the water row on the
+dry atmospheres, where the four cases themselves span ~13 orders of magnitude
+and no shared scale can render them together; there each panel is scaled to its
+own peak and annotated with it.
 
 Configuration is in config_trappist_vertical_structure.yaml; see that file's
 header for scope constraints, the ben/hab-vs-1/2 axis definition, and why the
@@ -38,7 +37,7 @@ import pandas as pd
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.colors import LogNorm, SymLogNorm
+from matplotlib.colors import LogNorm
 
 plt.rcParams.update({
     'font.family': 'serif',
@@ -64,7 +63,8 @@ ATM_LABEL = cfg['atm_label']
 CASES = cfg['cases']
 ALT_MAX_CFG = cfg['contour_alt_max_km']
 XLIM = cfg['xlim_years']
-CONTROL_KEY = 'control'
+# Atmospheres whose water row needs a per-panel scale (see module docstring).
+PER_PANEL_Q = set(cfg.get('per_panel_water_atm', []))
 
 
 def dpath(atm, key, sub):
@@ -93,9 +93,9 @@ def load_profile(atm, key, sub):
 
 
 def pos_scale(fields, decades):
-    """Shared (vmin, vmax) for a strictly positive row: vmax is the row's own
-    99.9th percentile of positive values, vmin that many decades below.
-    None if the row is everywhere non-positive (e.g. a control's aerosol)."""
+    """Shared (vmin, vmax) for a row: vmax is the row's own 99.9th percentile of
+    positive values, vmin that many decades below. None if the row is everywhere
+    non-positive (e.g. a control's aerosol, or a dry atmosphere's water)."""
     vals = [f[f > 0].ravel() for f in fields if f is not None]
     pos = np.concatenate(vals) if vals else np.array([])
     if pos.size == 0:
@@ -104,59 +104,26 @@ def pos_scale(fields, decades):
     return vmax * 10.0 ** (-decades), vmax
 
 
-def sym_scale(fields, decades, noise=None):
-    """Shared (linthresh, vmax) for a signed row.
-
-    vmax is the 99.9th percentile of |anomaly|. linthresh -- where the
-    symmetric-log scale goes linear into zero -- is set to the control run own
-    internal variability when that is known, so that anomalies indistinguishable
-    from noise render as neutral colour instead of as vivid red/blue mottling.
-    Without that floor the moist atmospheres show nothing but their own
-    variability, which is larger than the injected plume. Falls back to
-    `decades` below vmax when no noise estimate is available (the dry
-    atmospheres, whose controls are identically zero and carry no noise).
-    None if every field is identically zero."""
-    vals = [np.abs(f[f != 0]).ravel() for f in fields if f is not None]
-    mag = np.concatenate(vals) if vals else np.array([])
-    if mag.size == 0:
-        return None
-    vmax = float(np.nanpercentile(mag, 99.9))
-    lin = noise if (noise is not None and noise > 0) else vmax * 10.0 ** (-decades)
-    return min(lin, vmax * 0.5), vmax
-
-
-# name, subpath, cmap, colorbar label, decades, signed?
+# name, subpath, cmap, colorbar label, decades
 ROWS = [
-    ('q',  cfg['subpath_q_profile'],  cfg['cmap_q'],
-     r'$\Delta$ water vapor [kg kg$^{-1}$]', cfg['q_decades'], True),
+    ('q',  cfg['subpath_q_profile'],  cfg['cmap_q_pos'],
+     r'Water vapor [kg kg$^{-1}$]', cfg['q_decades']),
     ('hz', cfg['subpath_hz_profile'], cfg['cmap_hz'],
-     r'Sulfate aerosol [kg m$^{-3}$]', cfg['hz_decades'], False),
+     r'Sulfate aerosol [kg m$^{-3}$]', cfg['hz_decades']),
 ]
 
 print('=' * 74)
 print('TRAPPIST-1 e vertical structure -- water vapor and sulfate aerosol')
-print('  global-mean profiles; one figure per atmosphere')
-print('  water row is an anomaly against each atmosphere own control')
+print('  global-mean profiles, raw fields in native units')
 print('=' * 74)
 
 for atm in ATMOS:
     print(f'\n--- {atm}: {ATM_LABEL[atm]} '.ljust(70, '-'))
 
-    # Load every panel up front so each row can be scaled against itself.
     data = {}
-    for rkey, sub, _, _, _, signed in ROWS:
-        ctrl = load_profile(atm, CONTROL_KEY, sub)
+    for rkey, sub, _, _, _ in ROWS:
         for c in CASES:
-            pr = load_profile(atm, c['key'], sub)
-            if pr is not None and signed:
-                if c['key'] == CONTROL_KEY:
-                    # Zero by construction; kept so the column stays aligned.
-                    pr = (pr[0], pr[1], pr[2], np.zeros_like(pr[3]))
-                elif ctrl is not None:
-                    n = min(len(pr[0]), len(ctrl[0]))
-                    pr = (pr[0][:n], pr[1], pr[2],
-                          pr[3][:n] - ctrl[3][:n])
-            data[(rkey, c['key'])] = pr
+            data[(rkey, c['key'])] = load_profile(atm, c['key'], sub)
 
     ncase = len(CASES)
     fig, axes = plt.subplots(len(ROWS), ncase,
@@ -168,54 +135,22 @@ for atm in ATMOS:
     alt_max = (min(tops) if (ALT_MAX_CFG in (None, 'auto') and tops)
                else float(ALT_MAX_CFG))
 
-    for irow, (rkey, sub, cmap, cblabel, decades, signed) in enumerate(ROWS):
+    for irow, (rkey, sub, cmap, cblabel, decades) in enumerate(ROWS):
         fields = [data[(rkey, c['key'])][3]
                   if data[(rkey, c['key'])] is not None else None
                   for c in CASES]
 
-        # A signed row only needs the diverging symmetric-log treatment where
-        # the anomaly actually goes negative -- i.e. on the moist atmospheres,
-        # where it is a perturbation on a large background. On the dry
-        # atmospheres the control is Q == 0, so the anomaly IS the raw field:
-        # strictly positive, spanning ~13 orders of magnitude across cases, and
-        # far better served by a plain log scale. Forcing symlog there wastes
-        # half the colourmap on negatives that do not exist and flattens the
-        # Hunga plume against the vanishing Tambora one.
-        has_neg = any(f is not None and np.any(f < 0) for f in fields)
-        use_sym = signed and has_neg
-
-        if use_sym:
-            # Native kg/kg on a symmetric-log scale. The anomaly is signed and
-            # spans a wide range with height -- on hab1 the stratospheric plume
-            # is ~1.6e-5 kg/kg while boundary-layer variability reaches ~1e-3,
-            # some 60x larger -- so a linear scale would let the wet
-            # troposphere swamp the thin stratosphere. `q_linthresh` sets where
-            # the scale turns linear into zero; below it the anomaly is small
-            # enough to be indistinguishable from the control's own
-            # variability at most levels, and renders near-white.
-            scale = (float(cfg['q_linthresh_by_atm'][atm]),
-                     float(cfg['q_vmax_by_atm'][atm]))
-        else:
-            # The dry water row spans far more decades than the moist one.
-            dec = (cfg['q_decades_dry'] if (signed and not has_neg)
-                   else decades)
-            scale = pos_scale(fields, dec)
-            # On the dry atmospheres the four water panels differ by up to
-            # ~13 orders of magnitude (Hunga injects 146 Tg H2O and keeps it;
-            # Tambora injects 1 Tg against a ~17 Tg demand and is stripped to
-            # ~1e-21 within weeks). No shared scale can render both, so each
-            # panel gets its own and is annotated with its peak. Cross-panel
-            # comparison of colour is meaningless here and is not intended;
-            # compare the printed peaks instead. The aerosol row keeps a
-            # shared scale, where the comparison IS meaningful.
-            per_panel = signed and not has_neg
-        if use_sym:
-            print(f'  {rkey:2s} anomaly in native kg/kg, symlog: linear within '
-                  f'+/-{cfg["q_linthresh_by_atm"][atm]:.0e}, log to '
-                  f'+/-{cfg["q_vmax_by_atm"][atm]:.0e}')
-
-        if not (signed and not has_neg):
-            per_panel = False
+        # The dry atmospheres' water spans ~13 orders of magnitude across the
+        # four cases: the Hunga template injects 146 Tg H2O and holds it, while
+        # Tambora injects 1 Tg against a ~17 Tg stoichiometric demand and is
+        # drawn down to ~1e-21 kg/kg within weeks. No shared scale renders both,
+        # so each panel is normalized to its own peak, which is printed in it.
+        # Colour is then not comparable between those panels; the printed peaks
+        # are. The aerosol row always keeps a shared scale, where the
+        # cross-case comparison is meaningful.
+        per_panel = (rkey == 'q' and atm in PER_PANEL_Q)
+        dec = cfg['q_decades_dry'] if per_panel else decades
+        scale = pos_scale(fields, dec)
 
         pcm = None
         for icol, c in enumerate(CASES):
@@ -229,39 +164,28 @@ for atm in ATMOS:
             akm = alt / 1000.0
             yrs = days / 365.25
 
-            blank = signed and c['key'] == CONTROL_KEY
-            if scale is None or blank or not np.any(f != 0):
-                # A dry control's water, any control's aerosol, or the water
-                # row's control panel, which is zero by construction. Say so
-                # rather than drawing an empty box.
+            if scale is None or not np.any(f > 0):
+                # Identically zero: a control's aerosol, or a dry atmosphere's
+                # water. Say so rather than drawing an empty box.
                 ax.set_facecolor('0.93')
-                msg = ('zero by construction' if blank else 'identically zero')
-                ax.text(0.5, 0.5, msg, ha='center', va='center',
+                ax.text(0.5, 0.5, 'identically zero', ha='center', va='center',
                         transform=ax.transAxes, fontsize=6.5, color='0.35')
             else:
-                if use_sym:
-                    lin, vmax = scale
-                    norm = SymLogNorm(linthresh=lin, vmin=-vmax, vmax=vmax,
-                                      base=10)
-                    plot_f = f.T
-                else:
-                    vmin, vmax = scale
-                    if per_panel:
-                        pmax = float(np.nanpercentile(f[f > 0], 99.9))
-                        vmin, vmax = pmax * 10.0 ** (-decades), pmax
-                    norm = LogNorm(vmin=vmin, vmax=vmax)
-                    plot_f = np.ma.masked_less_equal(f.T, 0.0)
-                row_cmap = cmap if use_sym or not signed else cfg['cmap_q_pos']
-                pcm = ax.pcolormesh(yrs, akm, plot_f, norm=norm, cmap=row_cmap,
-                                    shading='auto', rasterized=True)
+                vmin, vmax = scale
                 if per_panel:
+                    pmax = float(np.nanpercentile(f[f > 0], 99.9))
+                    vmin, vmax = pmax * 10.0 ** (-dec), pmax
                     ax.text(0.97, 0.04, f'max {np.nanmax(f):.0e}',
                             transform=ax.transAxes, ha='right', va='bottom',
                             fontsize=5.6, color='0.15',
                             bbox=dict(boxstyle='round,pad=0.18', fc='white',
                                       ec='none', alpha=0.75))
-                it, iz = np.unravel_index(int(np.nanargmax(np.abs(f))), f.shape)
-                print(f'  {rkey:2s} {c["key"]:13s} peak {f[it, iz]:+.3e} '
+                pcm = ax.pcolormesh(yrs, akm,
+                                    np.ma.masked_less_equal(f.T, 0.0),
+                                    norm=LogNorm(vmin=vmin, vmax=vmax),
+                                    cmap=cmap, shading='auto', rasterized=True)
+                it, iz = np.unravel_index(int(np.nanargmax(f)), f.shape)
+                print(f'  {rkey:2s} {c["key"]:13s} peak {f[it, iz]:.3e} '
                       f'at day {days[it]:6.0f}, {akm[iz]:5.1f} km')
 
             ax.set_ylim(0, alt_max)
@@ -276,14 +200,7 @@ for atm in ATMOS:
         if pcm is not None:
             cb = fig.colorbar(pcm, ax=axes[irow].tolist(), pad=0.015,
                               aspect=16, fraction=0.035)
-            # On the dry atmospheres the "anomaly" is the raw field, so label
-            # it as such rather than implying a difference was taken.
-            if use_sym or not signed:
-                label = cblabel
-            elif per_panel:
-                label = r'Water vapor [kg kg$^{-1}$], per-panel scale'
-            else:
-                label = r'Water vapor [kg kg$^{-1}$]'
+            label = cblabel + (', per-panel scale' if per_panel else '')
             cb.set_label(label, fontsize=7)
             cb.ax.tick_params(labelsize=6)
 
