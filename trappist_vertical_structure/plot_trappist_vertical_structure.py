@@ -128,7 +128,7 @@ def sym_scale(fields, decades, noise=None):
 # name, subpath, cmap, colorbar label, decades, signed?
 ROWS = [
     ('q',  cfg['subpath_q_profile'],  cfg['cmap_q'],
-     r'$\Delta$ water vapor [local $\sigma$]', cfg['q_decades'], True),
+     r'$\Delta$ water vapor [kg kg$^{-1}$]', cfg['q_decades'], True),
     ('hz', cfg['subpath_hz_profile'], cfg['cmap_hz'],
      r'Sulfate aerosol [kg m$^{-3}$]', cfg['hz_decades'], False),
 ]
@@ -144,32 +144,8 @@ for atm in ATMOS:
 
     # Load every panel up front so each row can be scaled against itself.
     data = {}
-    noise = {}
     for rkey, sub, _, _, _, signed in ROWS:
         ctrl = load_profile(atm, CONTROL_KEY, sub)
-        if signed and ctrl is not None and np.any(ctrl[3] != 0):
-            # The control own temporal spread, computed LEVEL BY LEVEL and
-            # kept as a profile rather than collapsed to one number.
-            #
-            # This matters more than it looks. Water spans four orders of
-            # magnitude from the moist boundary layer to the stratosphere, and
-            # so does its variability: on hab1 the control varies by ~9e-5
-            # kg/kg below 10 km but only ~7e-9 in the 25-45 km layer. A single
-            # whole-column threshold is therefore set by the wet troposphere
-            # and is ~4 orders too coarse for the stratosphere, which whites
-            # out a genuine stratospheric plume (hab1 hunga_100x sustains a
-            # ~120 Tg excess on an ~87 Tg background -- unmistakable, and
-            # invisible under a column-wide threshold).
-            #
-            # Normalizing each level by its OWN sigma puts the whole column on
-            # one interpretable footing: the plotted quantity becomes the
-            # anomaly in units of local control variability, so a value of 3
-            # means 3 sigma whether it sits at 2 km or 40 km.
-            sd = ctrl[3].std(axis=0)
-            # Guard levels with no variability at all (a perfectly steady
-            # level would otherwise divide to infinity).
-            floor = np.nanpercentile(sd[sd > 0], 1) if np.any(sd > 0) else 1.0
-            noise[rkey] = np.maximum(sd, floor)
         for c in CASES:
             pr = load_profile(atm, c['key'], sub)
             if pr is not None and signed:
@@ -178,10 +154,8 @@ for atm in ATMOS:
                     pr = (pr[0], pr[1], pr[2], np.zeros_like(pr[3]))
                 elif ctrl is not None:
                     n = min(len(pr[0]), len(ctrl[0]))
-                    anom = pr[3][:n] - ctrl[3][:n]
-                    if rkey in noise:
-                        anom = anom / noise[rkey][None, :]
-                    pr = (pr[0][:n], pr[1], pr[2], anom)
+                    pr = (pr[0][:n], pr[1], pr[2],
+                          pr[3][:n] - ctrl[3][:n])
             data[(rkey, c['key'])] = pr
 
     ncase = len(CASES)
@@ -211,10 +185,16 @@ for atm in ATMOS:
         use_sym = signed and has_neg
 
         if use_sym:
-            # The field is now in units of local control sigma, so the scale is
-            # fixed and interpretable rather than data-derived: linear within
-            # +/-1 sigma (noise), logarithmic out to +/-`sigma_max` sigma.
-            scale = (1.0, float(cfg['sigma_max']))
+            # Native kg/kg on a symmetric-log scale. The anomaly is signed and
+            # spans a wide range with height -- on hab1 the stratospheric plume
+            # is ~1.6e-5 kg/kg while boundary-layer variability reaches ~1e-3,
+            # some 60x larger -- so a linear scale would let the wet
+            # troposphere swamp the thin stratosphere. `q_linthresh` sets where
+            # the scale turns linear into zero; below it the anomaly is small
+            # enough to be indistinguishable from the control's own
+            # variability at most levels, and renders near-white.
+            scale = (float(cfg['q_linthresh_by_atm'][atm]),
+                     float(cfg['q_vmax_by_atm'][atm]))
         else:
             # The dry water row spans far more decades than the moist one.
             dec = (cfg['q_decades_dry'] if (signed and not has_neg)
@@ -229,11 +209,10 @@ for atm in ATMOS:
             # compare the printed peaks instead. The aerosol row keeps a
             # shared scale, where the comparison IS meaningful.
             per_panel = signed and not has_neg
-        if use_sym and rkey in noise:
-            nz = noise[rkey]
-            print(f'  {rkey:2s} level-wise control sigma spans '
-                  f'{nz.min():.2e} to {nz.max():.2e}; anomaly plotted in '
-                  f'units of local sigma, |a| < 1 is noise')
+        if use_sym:
+            print(f'  {rkey:2s} anomaly in native kg/kg, symlog: linear within '
+                  f'+/-{cfg["q_linthresh_by_atm"][atm]:.0e}, log to '
+                  f'+/-{cfg["q_vmax_by_atm"][atm]:.0e}')
 
         if not (signed and not has_neg):
             per_panel = False

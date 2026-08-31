@@ -112,16 +112,29 @@ xlim_years: [0, 6]
 # common scale would render the dry pair blank. Compare panels within a
 # figure; do not compare colours between figures.
 #
-# The water row is symmetric-log (positive and negative anomalies on one
-# diverging scale); q_decades sets how far below the peak |anomaly| the
-# logarithmic part extends before it goes linear into zero.
-q_decades:   5.0    # moist atmospheres (unused since the sigma normalization)
-
-# Moist water row is plotted in units of each LEVEL own control sigma, so the
-# colour limits are fixed and mean the same thing at every altitude: linear
-# within +/-1 sigma (indistinguishable from internal variability, rendered
-# near-white), logarithmic out to +/-sigma_max.
-sigma_max: 1000.0
+# The water row is symmetric-log, in NATIVE kg/kg: positive and negative
+# anomalies on one diverging scale.
+#
+# `q_linthresh` is where the scale turns linear into zero, and it is the one
+# number that decides what this row shows. The anomaly is signed and its
+# magnitude falls steeply with height: on hab1 the stratospheric plume is
+# ~1.6e-5 kg/kg while boundary-layer variability reaches ~1e-3, some 60x
+# larger. A purely linear scale therefore lets the wet troposphere swamp the
+# thin stratosphere, which is exactly where the injected water goes.
+#
+# Set it near the control's own variability in the layer of interest, so that
+# what stays near-white is genuinely indistinguishable from internal
+# variability. The two atmospheres need different values because their water
+# reservoirs differ by ~2 orders of magnitude (hab1 holds ~87 Tg of
+# stratospheric water, hab2 ~21,600 Tg); one shared threshold would be tuned to
+# one of them and wrong for the other.
+q_decades:   5.0    # retained for the dry fallback path
+q_linthresh_by_atm:
+  hab1: 1.0e-8
+  hab2: 1.0e-6
+q_vmax_by_atm:
+  hab1: 1.0e-3
+  hab2: 1.0e-2
 hz_decades:  4.0
 
 # The dry atmospheres need their own, much wider water range. There the water
