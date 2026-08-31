@@ -1,0 +1,125 @@
+# Config for the TRAPPIST-1 vertical-structure figures.
+#
+# One figure per atmosphere (ben1, ben2, hab1, hab2). Each figure is a
+# 2 x 4 grid of height-time contours for four representative cases:
+#
+#   row 1  water vapor ANOMALY   Q - Q_control   [kg/kg]
+#   row 2  sulfate aerosol       VOLCHZMD        [kg/m3]
+#
+# These are GLOBAL-MEAN vertical profiles: the area-weighted horizontal mean
+# was already taken by exovolcano-analysis when it wrote profiles/*.csv, so
+# each panel shows the global column evolving in time, not a local plume.
+#
+# WHAT THESE FIGURES SHOW AND DO NOT SHOW
+#
+# They show where injected material sits and how long it stays there. They do
+# NOT show plume structure, terminator asymmetry, or anything horizontally
+# resolved -- a global mean is precisely the diagnostic least sensitive to
+# those, and the resolved picture is deferred to the companion study.
+#
+# NO OBSERVATIONAL REFERENCE APPEARS ON ANY PANEL. There is no measured
+# TRAPPIST-1 volcanic aerosol or stratospheric water profile to compare to.
+#
+# ALL FOUR SUITES ARE NOW VALID. The earlier ben1/hab1 composition defect
+# (pure CO2 where N2 + 400 ppm CO2 was specified) and the spurious-water bug
+# (exo_convect_plim = 4.e3 Pa instead of 5.0 Pa) are both resolved, and all
+# 56 cases were rerun.
+#
+# THE TWO AXES ARE ben/hab = SURFACE and 1/2 = COMPOSITION. Verified against
+# experiment_yamls/*_suite1.yaml (config_type plus the header lines), 2026-08-31:
+#
+#              dry land (cam_land_fv)   aquaplanet (cam_aqua_fv)
+#   N2+400ppm         ben1                      hab1
+#   1 bar CO2         ben2                      hab2
+#
+# It is easy to get this backwards -- an earlier draft of this config had the
+# axes swapped. ben1/ben2 are the DRY pair (their controls hold Q == 0 at every
+# level, which is the quick check); hab1/hab2 are the moist pair.
+#
+# WHY THE WATER ROW IS AN ANOMALY, NOT THE RAW FIELD. On hab1/hab2 the ambient
+# water column exceeds the injected plume by five or more orders of magnitude,
+# so a raw-Q panel of an eruption is visually identical to its control and shows
+# nothing. Differencing against each atmosphere's own no-eruption control is
+# what makes the injected water visible. Consequences to respect:
+#   - The control panel of the water row is then identically zero BY
+#     CONSTRUCTION and is drawn as such; it is not a measurement.
+#   - The control is an independent realization, so its internal variability
+#     does NOT cancel in the difference. On the moist atmospheres the anomaly
+#     therefore carries a genuine noise floor and goes both positive and
+#     negative; only excursions well outside that mottling are signal. The dry
+#     atmospheres have Q == 0 controls, so there the anomaly IS the raw field
+#     and is exact.
+#
+# THE 100x RUNG IS NOT A CLEAN LADDER MEMBER. Those cases inject over 48 h
+# rather than 24 h (the per-timestep tendency into one column exceeds what the
+# dynamics absorb at 24 h). Injected MASS is as labeled; the RATE is halved.
+# Panel titles mark the rung.
+#
+# WHY THE DRY TAMBORA CASES LOOK WATERLESS AFTER ~DAY 20. This is real model
+# behavior, not a broken case. The scheme runs SO2 + H2O + 1/2 O2 -> H2SO4 and
+# consumes water stoichiometrically. The Tambora template injects 1 Tg H2O
+# against a ~17 Tg demand, so on a dry planet the water is drawn down to ~1e-21
+# kg/kg within about 20 days, and the 10x/100x rungs strip it faster still. The
+# Hunga template, injecting 146 Tg H2O, is the case where dry-world water
+# persists. Do not "fix" the dry Tambora water panels.
+
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+
+batches:
+  ben1: ben1_suite1
+  ben2: ben2_suite1
+  hab1: hab1_suite1
+  hab2: hab2_suite1
+
+# Shown in each figure's suptitle.
+atm_label:
+  ben1: "ben1: dry land, 1 bar N$_2$ + 400 ppm CO$_2$"
+  ben2: "ben2: dry land, 1 bar CO$_2$"
+  hab1: "hab1: aquaplanet, 1 bar N$_2$ + 400 ppm CO$_2$"
+  hab2: "hab2: aquaplanet, 1 bar CO$_2$"
+
+subpath_q_profile:  profiles/Q.csv
+subpath_hz_profile: profiles/VOLCHZMD.csv
+
+outfile_stem: fig_trappist_vertical   # suffixed with _<atm>
+
+# Representative cases, left to right. `control` carries no eruption and is
+# the background against which the others are read.
+cases:
+  - {key: control,      label: "control (no eruption)"}
+  - {key: tambora,      label: "Tambora 1$\\times$"}
+  - {key: tambora_100x, label: "Tambora 100$\\times$ (48 h inj.)"}
+  - {key: hunga,        label: "Hunga 1$\\times$"}
+
+# Altitude ceiling. `auto` fits each figure to its own model top, which differs
+# by suite (ben2/hab2 reach ~47-50 km, ben1/hab1 ~71 km); a fixed value leaves a
+# blank band on the shallower grids. Set a number to override.
+contour_alt_max_km: auto
+xlim_years: [0, 6]
+
+# Colour-scale dynamic range, in decades below each row's own maximum. Scales
+# are SHARED ACROSS THE PANELS OF A ROW within a figure, so cases are directly
+# comparable there, and are NOT shared between figures, because the four
+# atmospheres differ in background water by many orders of magnitude and a
+# common scale would render the dry pair blank. Compare panels within a
+# figure; do not compare colours between figures.
+#
+# The water row is symmetric-log (positive and negative anomalies on one
+# diverging scale); q_decades sets how far below the peak |anomaly| the
+# logarithmic part extends before it goes linear into zero.
+q_decades:   5.0    # moist atmospheres (symlog anomaly)
+hz_decades:  4.0
+
+# The dry atmospheres need their own, much wider water range. There the water
+# IS the raw field, and it spans ~13 orders of magnitude across the four
+# panels: the Hunga template injects 146 Tg H2O and holds it, while the
+# Tambora template injects 1 Tg against a ~17 Tg stoichiometric demand and is
+# drawn down to ~1e-21 kg/kg within ~20 days. A 5-decade window renders the
+# Tambora panels uniformly flat and hides exactly that contrast, which is the
+# point of the figure.
+q_decades_dry: 14.0
+
+cmap_q:      RdBu_r      # diverging; used where the anomaly goes negative (hab1/hab2)
+cmap_q_pos:  viridis     # sequential; used where it does not (ben1/ben2, whose
+                         # controls are Q == 0, so the anomaly IS the raw field)
+cmap_hz: inferno
