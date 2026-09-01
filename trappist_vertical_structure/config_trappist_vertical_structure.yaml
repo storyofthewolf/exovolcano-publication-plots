@@ -97,32 +97,50 @@ contour_alt_max_km: auto
 xlim_years: [0, 6]
 
 # ---------------------------------------------------------------------------
-# COLOUR SCALES ARE GLOBAL AND FIXED.
+# COLOUR SCALES ARE FIXED PER SUITE.
 #
-# Every panel of every figure uses the same limits for a given variable, so the
-# four atmospheres are instantly comparable by eye: a colour means one physical
-# value everywhere in the figure set. Do not make these per-figure or per-panel
-# again. An earlier revision scaled the dry water panels individually, which
-# flattened exactly the effect these figures exist to show -- the orders-of-
-# magnitude drawdown of water as SO2 consumes it.
+# Within one figure every panel shares one scale per variable, so the five
+# cases of a suite are directly comparable and the eye reads colour as value.
+# Between figures the scales differ, because the four atmospheres span far too
+# much dynamic range to share one: a single global scale (tried, and rejected
+# 2026-08-31) pushed hab2's water into the top decade of a 22-decade bar and
+# left ben1/ben2 in the bottom few, which is unreadable in both directions.
 #
-# Water spans 22 decades because that drawdown is real and large: the dry
-# Tambora cases fall to ~1e-21 kg/kg once their 1 Tg of H2O is consumed against
-# a ~17 Tg stoichiometric demand, while the dry Hunga cases hold ~1e-5 and the
-# moist boundary layer reaches ~8e-3. The floor is set below the drawdown so
-# that the drop is visible as a drop rather than clipped flat.
+# DO NOT make these per-panel. An earlier revision scaled each dry water panel
+# to its own peak, which flattened the very effect these figures exist to show:
+# the orders-of-magnitude drawdown of water as SO2 consumes it.
 #
-# Aerosol spans 7 decades, from a floor below which the burden is negligible up
-# to the largest peak in the suite (hab2 tambora_100x, ~1.9e-9 kg/m3).
+# How the limits were chosen, from each suite's own distribution of positive
+# values across all five cases:
 #
-# Values BELOW the floor are clamped to the lowest colour, not masked out, so a
-# panel never shows white holes where the field is merely small. True zeros
-# (a control's aerosol, a dry control's water) are still drawn as an explicit
-# "identically zero" panel, which is a different statement from "small".
-q_vmin:  1.0e-24
-q_vmax:  1.0e-2
-hz_vmin: 1.0e-16
-hz_vmax: 1.0e-9
+#   Water. Top of each range is the suite's own maximum. The floor is set low
+#   enough to render the stoichiometric drawdown as a visible descent rather
+#   than a clipped floor. The dry pair need ~1e-24, their Tambora cases falling
+#   to ~1e-21 once the 1 Tg of injected H2O is consumed. hab1 needs ~1e-20:
+#   its own tambora_100x dries the air above ~45 km to ~5e-17. hab2 never falls
+#   below ~3e-6 anywhere, so a floor beneath that would be empty bar.
+#
+#   Aerosol. Roughly six decades below each suite's peak. The median cell is
+#   trace (1e-16 to 1e-27 depending on suite), so a deeper floor spends most of
+#   the colourmap on negligible material and renders the panels near-black.
+#
+# Values below the floor are CLAMPED to the lowest colour, never masked, so a
+# panel never shows white holes where the field is merely small. A field that is
+# identically zero still gets its own labelled panel, which says something
+# different from "small".
+scales:
+  ben1:
+    q:  [1.0e-24, 3.0e-05]
+    hz: [1.0e-18, 3.0e-12]
+  ben2:
+    q:  [1.0e-24, 6.0e-05]
+    hz: [1.0e-18, 4.0e-12]
+  hab1:
+    q:  [1.0e-20, 2.0e-03]
+    hz: [1.0e-15, 1.0e-09]
+  hab2:
+    q:  [1.0e-06, 8.0e-03]
+    hz: [1.0e-14, 2.0e-09]
 
 cmap_q:  viridis     # sequential: water is a raw, strictly positive field
 cmap_hz: inferno

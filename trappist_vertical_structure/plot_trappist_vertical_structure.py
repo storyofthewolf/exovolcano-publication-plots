@@ -16,13 +16,14 @@ The profiles are GLOBAL MEANS -- exovolcano-analysis already took the
 area-weighted horizontal average when it wrote profiles/*.csv -- so these show
 the global column evolving, not a resolved plume.
 
-Colour scales are GLOBAL AND FIXED, set in the config: every panel of every
-figure uses the same limits for a given variable, so a colour means one physical
-value across the whole figure set and the four atmospheres can be compared by
-eye. Values below the floor are clamped to the lowest colour rather than masked,
-so no panel shows white holes where the field is merely small; a field that is
-identically zero is drawn as a labelled grey panel instead, which is a different
-statement from "small".
+Colour scales are FIXED PER SUITE, set in the config: within one figure every
+panel shares one scale per variable, so the five cases are directly comparable
+and colour reads as value; between figures the scales differ, the four
+atmospheres spanning far too much dynamic range to share one legibly. Values
+below the floor are clamped to the lowest colour rather than masked, so no panel
+shows white holes where the field is merely small; a field that is identically
+zero is drawn as a labelled grey panel instead, which is a different statement
+from "small".
 
 Configuration is in config_trappist_vertical_structure.yaml; see that file's
 header for scope constraints, the ben/hab-vs-1/2 axis definition, and why the
@@ -90,12 +91,12 @@ def load_profile(atm, key, sub):
             d.iloc[:, 1:].values.astype(float))
 
 
-# name, subpath, cmap, colorbar label, (vmin, vmax)
+# name, subpath, cmap, colorbar label; limits come from cfg['scales'][atm]
 ROWS = [
     ('q',  cfg['subpath_q_profile'],  cfg['cmap_q'],
-     r'Water vapor [kg kg$^{-1}$]', (cfg['q_vmin'], cfg['q_vmax'])),
+     r'Water vapor [kg kg$^{-1}$]'),
     ('hz', cfg['subpath_hz_profile'], cfg['cmap_hz'],
-     r'Sulfate aerosol [kg m$^{-3}$]', (cfg['hz_vmin'], cfg['hz_vmax'])),
+     r'Sulfate aerosol [kg m$^{-3}$]'),
 ]
 
 print('=' * 74)
@@ -107,7 +108,7 @@ for atm in ATMOS:
     print(f'\n--- {atm}: {ATM_LABEL[atm]} '.ljust(70, '-'))
 
     data = {}
-    for rkey, sub, _, _, _ in ROWS:
+    for rkey, sub, _, _ in ROWS:
         for c in CASES:
             data[(rkey, c['key'])] = load_profile(atm, c['key'], sub)
 
@@ -121,8 +122,8 @@ for atm in ATMOS:
     alt_max = (min(tops) if (ALT_MAX_CFG in (None, 'auto') and tops)
                else float(ALT_MAX_CFG))
 
-    for irow, (rkey, sub, cmap, cblabel, limits) in enumerate(ROWS):
-        vmin, vmax = float(limits[0]), float(limits[1])
+    for irow, (rkey, sub, cmap, cblabel) in enumerate(ROWS):
+        vmin, vmax = (float(v) for v in cfg['scales'][atm][rkey])
 
         pcm = None
         for icol, c in enumerate(CASES):
