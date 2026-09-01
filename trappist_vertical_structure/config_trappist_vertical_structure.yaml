@@ -83,70 +83,46 @@ subpath_hz_profile: profiles/VOLCHZMD.csv
 
 outfile_stem: fig_trappist_vertical   # suffixed with _<atm>
 
-# Representative cases, left to right: both templates at both ends of the
-# magnitude ladder, so the sulfur-rich and water-rich injections can be read
-# against each other at fixed magnitude and down each column at fixed template.
-#
-# The `control` case is deliberately NOT listed here. It is still loaded --
-# it supplies the moist atmospheres' anomaly baseline and their noise floor --
-# but it is not drawn, because its own panels carry no information: its aerosol
-# is identically zero by construction on every atmosphere, and in the water row
-# it is the reference the anomaly is taken against, hence identically zero
-# there too. Re-adding it would restore four blank panels.
+# Representative cases, left to right. The no-eruption control leads, so every
+# panel to its right is read against the atmosphere's own unperturbed state,
+# then both templates at both ends of the magnitude ladder.
 cases:
+  - {key: control,      label: "control (no eruption)"}
   - {key: tambora,      label: "Tambora 1$\\times$"}
   - {key: tambora_100x, label: "Tambora 100$\\times$ (48 h inj.)"}
   - {key: hunga,        label: "Hunga 1$\\times$"}
   - {key: hunga_100x,   label: "Hunga 100$\\times$ (48 h inj.)"}
 
-# Altitude ceiling. `auto` fits each figure to its own model top, which differs
-# by suite (ben2/hab2 reach ~47-50 km, ben1/hab1 ~71 km); a fixed value leaves a
-# blank band on the shallower grids. Set a number to override.
 contour_alt_max_km: auto
 xlim_years: [0, 6]
 
-# Colour-scale dynamic range, in decades below each row's own maximum. Scales
-# are SHARED ACROSS THE PANELS OF A ROW within a figure, so cases are directly
-# comparable there, and are NOT shared between figures, because the four
-# atmospheres differ in background water by many orders of magnitude and a
-# common scale would render the dry pair blank. Compare panels within a
-# figure; do not compare colours between figures.
+# ---------------------------------------------------------------------------
+# COLOUR SCALES ARE GLOBAL AND FIXED.
 #
-# The water row is symmetric-log, in NATIVE kg/kg: positive and negative
-# anomalies on one diverging scale.
+# Every panel of every figure uses the same limits for a given variable, so the
+# four atmospheres are instantly comparable by eye: a colour means one physical
+# value everywhere in the figure set. Do not make these per-figure or per-panel
+# again. An earlier revision scaled the dry water panels individually, which
+# flattened exactly the effect these figures exist to show -- the orders-of-
+# magnitude drawdown of water as SO2 consumes it.
 #
-# `q_linthresh` is where the scale turns linear into zero, and it is the one
-# number that decides what this row shows. The anomaly is signed and its
-# magnitude falls steeply with height: on hab1 the stratospheric plume is
-# ~1.6e-5 kg/kg while boundary-layer variability reaches ~1e-3, some 60x
-# larger. A purely linear scale therefore lets the wet troposphere swamp the
-# thin stratosphere, which is exactly where the injected water goes.
+# Water spans 22 decades because that drawdown is real and large: the dry
+# Tambora cases fall to ~1e-21 kg/kg once their 1 Tg of H2O is consumed against
+# a ~17 Tg stoichiometric demand, while the dry Hunga cases hold ~1e-5 and the
+# moist boundary layer reaches ~8e-3. The floor is set below the drawdown so
+# that the drop is visible as a drop rather than clipped flat.
 #
-# Set it near the control's own variability in the layer of interest, so that
-# what stays near-white is genuinely indistinguishable from internal
-# variability. The two atmospheres need different values because their water
-# reservoirs differ by ~2 orders of magnitude (hab1 holds ~87 Tg of
-# stratospheric water, hab2 ~21,600 Tg); one shared threshold would be tuned to
-# one of them and wrong for the other.
-q_decades:   5.0    # retained for the dry fallback path
-# Atmospheres whose WATER row needs a per-panel scale. The dry pair do,
-# because their four cases span ~13 orders of magnitude and no shared scale
-# renders them together. The moist pair do not: their water is dominated by a
-# common ambient reservoir, so a shared scale is both possible and the more
-# informative choice there.
-per_panel_water_atm: [ben1, ben2]
-hz_decades:  4.0
+# Aerosol spans 7 decades, from a floor below which the burden is negligible up
+# to the largest peak in the suite (hab2 tambora_100x, ~1.9e-9 kg/m3).
+#
+# Values BELOW the floor are clamped to the lowest colour, not masked out, so a
+# panel never shows white holes where the field is merely small. True zeros
+# (a control's aerosol, a dry control's water) are still drawn as an explicit
+# "identically zero" panel, which is a different statement from "small".
+q_vmin:  1.0e-24
+q_vmax:  1.0e-2
+hz_vmin: 1.0e-16
+hz_vmax: 1.0e-9
 
-# The dry atmospheres need their own, much wider water range. There the water
-# IS the raw field, and it spans ~13 orders of magnitude across the four
-# panels: the Hunga template injects 146 Tg H2O and holds it, while the
-# Tambora template injects 1 Tg against a ~17 Tg stoichiometric demand and is
-# drawn down to ~1e-21 kg/kg within ~20 days. A 5-decade window renders the
-# Tambora panels uniformly flat and hides exactly that contrast, which is the
-# point of the figure.
-q_decades_dry: 14.0
-
-cmap_q:      RdBu_r      # diverging; used where the anomaly goes negative (hab1/hab2)
-cmap_q_pos:  viridis     # sequential; used where it does not (ben1/ben2, whose
-                         # controls are Q == 0, so the anomaly IS the raw field)
+cmap_q:  viridis     # sequential: water is a raw, strictly positive field
 cmap_hz: inferno

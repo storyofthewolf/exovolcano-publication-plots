@@ -16,13 +16,13 @@ The profiles are GLOBAL MEANS -- exovolcano-analysis already took the
 area-weighted horizontal average when it wrote profiles/*.csv -- so these show
 the global column evolving, not a resolved plume.
 
-Scales are shared across the panels of a row WITHIN a figure, so cases are
-directly comparable there, and are NOT shared between figures, because the four
-atmospheres differ in background water by many orders of magnitude and a common
-scale would render the dry pair blank. The one exception is the water row on the
-dry atmospheres, where the four cases themselves span ~13 orders of magnitude
-and no shared scale can render them together; there each panel is scaled to its
-own peak and annotated with it.
+Colour scales are GLOBAL AND FIXED, set in the config: every panel of every
+figure uses the same limits for a given variable, so a colour means one physical
+value across the whole figure set and the four atmospheres can be compared by
+eye. Values below the floor are clamped to the lowest colour rather than masked,
+so no panel shows white holes where the field is merely small; a field that is
+identically zero is drawn as a labelled grey panel instead, which is a different
+statement from "small".
 
 Configuration is in config_trappist_vertical_structure.yaml; see that file's
 header for scope constraints, the ben/hab-vs-1/2 axis definition, and why the
@@ -63,8 +63,6 @@ ATM_LABEL = cfg['atm_label']
 CASES = cfg['cases']
 ALT_MAX_CFG = cfg['contour_alt_max_km']
 XLIM = cfg['xlim_years']
-# Atmospheres whose water row needs a per-panel scale (see module docstring).
-PER_PANEL_Q = set(cfg.get('per_panel_water_atm', []))
 
 
 def dpath(atm, key, sub):
@@ -92,24 +90,12 @@ def load_profile(atm, key, sub):
             d.iloc[:, 1:].values.astype(float))
 
 
-def pos_scale(fields, decades):
-    """Shared (vmin, vmax) for a row: vmax is the row's own 99.9th percentile of
-    positive values, vmin that many decades below. None if the row is everywhere
-    non-positive (e.g. a control's aerosol, or a dry atmosphere's water)."""
-    vals = [f[f > 0].ravel() for f in fields if f is not None]
-    pos = np.concatenate(vals) if vals else np.array([])
-    if pos.size == 0:
-        return None
-    vmax = float(np.nanpercentile(pos, 99.9))
-    return vmax * 10.0 ** (-decades), vmax
-
-
-# name, subpath, cmap, colorbar label, decades
+# name, subpath, cmap, colorbar label, (vmin, vmax)
 ROWS = [
-    ('q',  cfg['subpath_q_profile'],  cfg['cmap_q_pos'],
-     r'Water vapor [kg kg$^{-1}$]', cfg['q_decades']),
+    ('q',  cfg['subpath_q_profile'],  cfg['cmap_q'],
+     r'Water vapor [kg kg$^{-1}$]', (cfg['q_vmin'], cfg['q_vmax'])),
     ('hz', cfg['subpath_hz_profile'], cfg['cmap_hz'],
-     r'Sulfate aerosol [kg m$^{-3}$]', cfg['hz_decades']),
+     r'Sulfate aerosol [kg m$^{-3}$]', (cfg['hz_vmin'], cfg['hz_vmax'])),
 ]
 
 print('=' * 74)
@@ -127,7 +113,7 @@ for atm in ATMOS:
 
     ncase = len(CASES)
     fig, axes = plt.subplots(len(ROWS), ncase,
-                             figsize=(2.0 * ncase + 1.0, 4.6),
+                             figsize=(1.85 * ncase + 1.2, 4.6),
                              sharex=True, sharey=True, squeeze=False)
 
     # Altitude ceiling: fit this atmosphere's own model top unless overridden.
@@ -135,22 +121,8 @@ for atm in ATMOS:
     alt_max = (min(tops) if (ALT_MAX_CFG in (None, 'auto') and tops)
                else float(ALT_MAX_CFG))
 
-    for irow, (rkey, sub, cmap, cblabel, decades) in enumerate(ROWS):
-        fields = [data[(rkey, c['key'])][3]
-                  if data[(rkey, c['key'])] is not None else None
-                  for c in CASES]
-
-        # The dry atmospheres' water spans ~13 orders of magnitude across the
-        # four cases: the Hunga template injects 146 Tg H2O and holds it, while
-        # Tambora injects 1 Tg against a ~17 Tg stoichiometric demand and is
-        # drawn down to ~1e-21 kg/kg within weeks. No shared scale renders both,
-        # so each panel is normalized to its own peak, which is printed in it.
-        # Colour is then not comparable between those panels; the printed peaks
-        # are. The aerosol row always keeps a shared scale, where the
-        # cross-case comparison is meaningful.
-        per_panel = (rkey == 'q' and atm in PER_PANEL_Q)
-        dec = cfg['q_decades_dry'] if per_panel else decades
-        scale = pos_scale(fields, dec)
+    for irow, (rkey, sub, cmap, cblabel, limits) in enumerate(ROWS):
+        vmin, vmax = float(limits[0]), float(limits[1])
 
         pcm = None
         for icol, c in enumerate(CASES):
@@ -164,24 +136,19 @@ for atm in ATMOS:
             akm = alt / 1000.0
             yrs = days / 365.25
 
-            if scale is None or not np.any(f > 0):
-                # Identically zero: a control's aerosol, or a dry atmosphere's
-                # water. Say so rather than drawing an empty box.
+            if not np.any(f > 0):
+                # Identically zero everywhere -- a control's aerosol, or a dry
+                # control's water. That is a different statement from "small",
+                # so it gets a labelled panel rather than a floor-coloured one.
                 ax.set_facecolor('0.93')
                 ax.text(0.5, 0.5, 'identically zero', ha='center', va='center',
                         transform=ax.transAxes, fontsize=6.5, color='0.35')
             else:
-                vmin, vmax = scale
-                if per_panel:
-                    pmax = float(np.nanpercentile(f[f > 0], 99.9))
-                    vmin, vmax = pmax * 10.0 ** (-dec), pmax
-                    ax.text(0.97, 0.04, f'max {np.nanmax(f):.0e}',
-                            transform=ax.transAxes, ha='right', va='bottom',
-                            fontsize=5.6, color='0.15',
-                            bbox=dict(boxstyle='round,pad=0.18', fc='white',
-                                      ec='none', alpha=0.75))
-                pcm = ax.pcolormesh(yrs, akm,
-                                    np.ma.masked_less_equal(f.T, 0.0),
+                # Clamp into range rather than masking: a value below the floor
+                # is small, not missing, and masking it punched white holes
+                # through the aerosol panels.
+                plot_f = np.clip(f.T, vmin, vmax)
+                pcm = ax.pcolormesh(yrs, akm, plot_f,
                                     norm=LogNorm(vmin=vmin, vmax=vmax),
                                     cmap=cmap, shading='auto', rasterized=True)
                 it, iz = np.unravel_index(int(np.nanargmax(f)), f.shape)
@@ -200,8 +167,7 @@ for atm in ATMOS:
         if pcm is not None:
             cb = fig.colorbar(pcm, ax=axes[irow].tolist(), pad=0.015,
                               aspect=16, fraction=0.035)
-            label = cblabel + (', per-panel scale' if per_panel else '')
-            cb.set_label(label, fontsize=7)
+            cb.set_label(cblabel, fontsize=7)
             cb.ax.tick_params(labelsize=6)
 
     fig.suptitle(ATM_LABEL[atm], fontsize=9.5, y=0.98)
