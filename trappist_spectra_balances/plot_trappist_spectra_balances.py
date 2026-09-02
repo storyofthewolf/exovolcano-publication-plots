@@ -165,6 +165,11 @@ for i, col in enumerate(COLS):
     peak = 0.0
     for e, day in enumerate(EPOCHS):
         j = int(np.argmin(np.abs(days - day)))
+        # Snapping to the nearest computed epoch is silent by nature, and a
+        # stale .npz would otherwise plot day 500 under a "day 2000" label.
+        if days[j] != day:
+            print(f"    NOTE: epoch {day} d not computed; using {days[j]} d. "
+                  f"Available: {list(days)}")
         diff = depb[j] - d0
         ax.plot(wlb[m], diff[m], color=ECOL[e], lw=0.9,
                 label=f"day {days[j]}", zorder=3)

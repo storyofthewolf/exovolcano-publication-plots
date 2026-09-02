@@ -78,7 +78,18 @@ columns:
 # them, so quoting them would overstate what is observable. This is the single
 # most important convention in this figure.
 resolution: 250.0
-epochs_days: [5, 25, 100, 500]
+
+# Four epochs spanning the full six-year integration (2026-09-02). The earlier
+# set ended at 500 d, which cut off exactly what these panels exist to show:
+# column 1's SO2 bands were still growing at the last point and column 3's
+# aerosol peaks near day 400 and decays over years. 25 d catches the rise, 100
+# and 600 the peak and turn, 2000 the late state.
+#
+# These must exist in the computed .npz, i.e. be a subset of DAYS in
+# exovolcano-spectra/scripts/run_all_suites.sh. The loader snaps to the nearest
+# available epoch rather than failing, so a stale .npz silently plots the wrong
+# day -- it now prints the day it actually used; check that output.
+epochs_days: [25, 100, 600, 2000]
 epoch_colors: ['#7fc7ff', '#3d8bfd', '#1b3f8b', '#0b1f47']
 
 wl_range_um: [0.6, 12.0]
@@ -117,7 +128,9 @@ burden_vars:
 kg_to_tg: 1.0e-09
 burden_ylabel: "burden [Tg]"
 burden_xlabel: "days since eruption"
-burden_xlim: [0, 600]
+# Full integration, matching the epochs above. At 600 d the late decay that
+# distinguishes columns 3 and 4 was still off the right edge.
+burden_xlim: [0, 2200]
 # Six decades, chosen to hold every curve that carries the argument: hab1's
 # 4.6e3 Tg aerosol peak down to ~1e-2 Tg, where the decaying tails cease to
 # matter. The full range of the data spans ~20 decades (ben1 delivers 3.2e-14 Tg
