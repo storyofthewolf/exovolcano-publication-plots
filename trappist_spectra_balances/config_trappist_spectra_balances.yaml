@@ -1,0 +1,135 @@
+# Config for the TRAPPIST-1 e "four balances" summary figure.
+#
+# ONE figure, 2 rows x 4 columns. Each column is one of the four balances that
+# govern the volcanic signal; the two rows say "here is the mechanism" (bottom,
+# GCM burdens) and "here is what it looks like" (top, transmission spectra).
+#
+#   col 1  DRY  + sulfur-rich   ben1 tambora_100x
+#   col 2  DRY  + water-rich    ben1 hunga_100x
+#   col 3  WET  + sulfur-rich   hab1 tambora_100x
+#   col 4  WET  + rainout       hab2 tambora_100x
+#
+# WHY THESE FOUR. They are not a symmetric 2x2 of the case matrix. Columns 3
+# and 4 are the SAME eruption on two wet atmospheres, because the fourth point
+# being made is about hab2's rainout specifically -- its large ambient water
+# aloft removes aerosol within months, where hab1's does not. A literal 2x2
+# (adding hab2 hunga_100x) would spend a panel on the suite's weakest signal
+# and drop the rainout contrast, which is the point.
+#
+# TWO DATA SOURCES, TWO REPOSITORIES.
+#   spectra  <- exovolcano-spectra/data/spectra/*.npz   (PICASO, 2026-09-01)
+#   burdens  <- remote_analysis/<atm>_suite1/<case>/data/scalar/*.csv
+# The spectra .npz files are gitignored in their own repo (multi-GB, and
+# regenerable via scripts/run_all_suites.sh there). If they are absent this
+# script says so and names the command that rebuilds them, rather than
+# half-drawing the figure.
+#
+# THE 100x RUNGS INJECT OVER 48 h, not 24 h. Injected mass is as labeled; the
+# rate is halved. Marked in the panel titles.
+#
+# THE TWO LADDERS SCALE DIFFERENT THINGS. Tambora scales SO2 at fixed H2O;
+# Hunga scales H2O at fixed SO2 (~1 Tg). So "hunga_100x" carries the same
+# sulfur as "hunga" -- which is exactly why column 2 is a water story and not
+# a sulfur one. Do not "fix" this by matching the multipliers.
+
+spectra_dir: /Users/wolfe/Desktop/projects/volcanos/exovolcano-spectra/data/spectra
+burden_root: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+
+spectra_suffix: _timeseries_picaso_aer.npz
+subpath_scalar: data/scalar
+
+# Columns, left to right. `balance` is the short label printed on the panel;
+# `atm_label` names the atmosphere underneath it.
+columns:
+  - key:       exovolc_ben1_tambora_100x
+    atm:       ben1
+    case:      tambora_100x
+    balance:   "dry $+$ sulfur-rich"
+    atm_label: "ben1: dry land, N$_2$"
+    note:      "SO$_2$ gas lingers"
+  - key:       exovolc_ben1_hunga_100x
+    atm:       ben1
+    case:      hunga_100x
+    balance:   "dry $+$ water-rich"
+    atm_label: "ben1: dry land, N$_2$"
+    note:      "H$_2$O persists aloft"
+  - key:       exovolc_hab1_tambora_100x
+    atm:       hab1
+    case:      tambora_100x
+    balance:   "wet $+$ sulfur-rich"
+    atm_label: "hab1: aquaplanet, N$_2$"
+    note:      "full conversion to aerosol"
+  - key:       exovolc_hab2_tambora_100x
+    atm:       hab2
+    case:      tambora_100x
+    balance:   "wet, water-rich aloft"
+    atm_label: "hab2: aquaplanet, CO$_2$"
+    note:      "aerosol rains out"
+
+# ---------------------------------------------------------------------------
+# TOP ROW -- transmission spectra
+#
+# Plotted as a DIFFERENCE from the day-0 (pre-eruption) spectrum, so every
+# panel shares a zero and the subject is the eruption's own signal rather than
+# the 4656 ppm geometric continuum it sits on.
+#
+# BINNED TO R = 250, comparable to MIRI's low-resolution mode. At the native
+# R = 15000 the line cores are several times larger, but no instrument resolves
+# them, so quoting them would overstate what is observable. This is the single
+# most important convention in this figure.
+resolution: 250.0
+epochs_days: [5, 25, 100, 500]
+epoch_colors: ['#7fc7ff', '#3d8bfd', '#1b3f8b', '#0b1f47']
+
+wl_range_um: [0.6, 12.0]
+spectra_ylabel: "$\\Delta$ transit depth [ppm]"
+
+# Bands annotated across the top row. Drawn as light spans, labeled once in
+# the leftmost panel only, so the annotation does not repeat four times.
+# `row` staggers the labels onto two lines: at 0.6-12 um the 5.5-7.0, 7.0-7.7
+# and 8.4-8.9 spans are adjacent on a log axis and their labels collide on one
+# line. Repeated species are labeled once (label: null draws the span only).
+bands:
+  - {label: "H$_2$O",   lo: 2.5, hi: 2.9, color: '#4c9f70', row: 0}
+  - {label: "CO$_2$",   lo: 4.0, hi: 4.8, color: '#b0b0b0', row: 0}
+  - {label: null,       lo: 5.5, hi: 7.0, color: '#4c9f70', row: 0}
+  - {label: "SO$_2$",   lo: 7.0, hi: 7.7, color: '#c8792a', row: 1}
+  - {label: null,       lo: 8.4, hi: 8.9, color: '#c8792a', row: 1}
+
+# ---------------------------------------------------------------------------
+# BOTTOM ROW -- GCM burdens, the mechanism behind the row above.
+#
+# Three curves per panel on one shared log axis in Tg. They are the three
+# reservoirs the scheme moves mass between:
+#   SO2       injected sulfur still in the gas phase
+#   VOLCHZMD  sulfate aerosol produced
+#   Q         total atmospheric water
+#
+# Q is included because it is the limiting reactant in columns 1 and 2 and the
+# unlimited one in 3 and 4; without it the "balance" framing has no referent.
+# On the dry atmospheres Q starts at exactly zero, so the curve begins only
+# once the eruption delivers water -- that gap is the point, not a defect.
+burden_vars:
+  - {var: SO2,      label: "SO$_2$ (gas)",      color: '#c8792a', ls: '-'}
+  - {var: VOLCHZMD, label: "sulfate aerosol",   color: '#8b2f8b', ls: '-'}
+  - {var: Q,        label: "H$_2$O (total)",    color: '#2f6f8b', ls: '--'}
+
+kg_to_tg: 1.0e-09
+burden_ylabel: "burden [Tg]"
+burden_xlabel: "days since eruption"
+burden_xlim: [0, 600]
+# Six decades, chosen to hold every curve that carries the argument: hab1's
+# 4.6e3 Tg aerosol peak down to ~1e-2 Tg, where the decaying tails cease to
+# matter. The full range of the data spans ~20 decades (ben1 delivers 3.2e-14 Tg
+# of water), but plotting all of it compresses every curve into an unreadable
+# band. Curves leaving the top or bottom are clipped, not dropped.
+# NOTE: YAML 1.1 needs a SIGNED exponent to parse these as floats; "1.0e8" is
+# read as a string and fails downstream in set_ylim.
+burden_ylim: [1.0e-02, 1.0e+06]
+
+# Marks the epochs of the top row onto the bottom row, so the reader can see
+# which part of the mechanism each spectrum samples.
+mark_epochs: true
+
+figsize: [13.4, 6.6]
+outfile_stem: fig_trappist_spectra_balances
