@@ -131,34 +131,110 @@ def load_burden(col, var):
 
 
 ncol = len(COLS)
-fig, axes = plt.subplots(2, ncol, figsize=cfg['figsize'],
-                         gridspec_kw={'height_ratios': [1.0, 0.85]})
+fig, axes = plt.subplots(3, ncol, figsize=cfg['figsize'],
+                         gridspec_kw={'height_ratios':
+                                      cfg.get('height_ratios', [1, 1, 0.85])})
 
 wl_lo, wl_hi = cfg['wl_range_um']
 
-# ---------------------------------------------------------------------------
-# TOP ROW -- difference spectra
-# ---------------------------------------------------------------------------
-print('top row: transmission spectra (difference from day 0)')
-spec_lims = []
-for i, col in enumerate(COLS):
-    ax = axes[0, i]
-    wlb, days, depb = load_spectra(col)
-    d0 = depb[0]
-
-    m = (wlb >= wl_lo) & (wlb <= wl_hi)
-
-    # Band spans first, so the spectra draw over them.
+def draw_bands(ax, label_them, y_base=0.972):
+    """Shade the diagnostic bands; label them only on the panel that asks."""
     for band in cfg['bands']:
         ax.axvspan(band['lo'], band['hi'], color=band['color'], alpha=0.13, lw=0)
-        if i == 0 and band.get('label'):
+        if label_them and band.get('label'):
             # Two rows, so the adjacent 5.5-8.9 um spans do not collide.
-            y = 0.972 - 0.062 * band.get('row', 0)
+            y = y_base - 0.062 * band.get('row', 0)
             ax.text(0.5 * (band['lo'] + band['hi']), y, band['label'],
                     transform=ax.get_xaxis_transform(), ha='center', va='top',
                     fontsize=6.5, color=band['color'], zorder=5,
                     path_effects=[pe.withStroke(linewidth=1.8,
                                                 foreground='white')])
+
+
+def style_spectral_axis(ax):
+    ax.set_xscale('log')
+    ax.set_xlim(wl_lo, wl_hi)
+    ax.set_xticks([1, 2, 3, 5, 7, 10])
+    ax.set_xticklabels(['1', '2', '3', '5', '7', '10'])
+
+
+# ---------------------------------------------------------------------------
+# ROW 1 -- RAW transit depth
+#
+# Cached per column so the difference row below does not re-read and re-bin the
+# same .npz; binning 47k points x 11 epochs is the slow step here.
+# ---------------------------------------------------------------------------
+print('row 1: raw transmission spectra')
+SPEC = {}
+raw_lo, raw_hi = np.inf, -np.inf
+for i, col in enumerate(COLS):
+    ax = axes[0, i]
+    wlb, days, depb = load_spectra(col)
+    SPEC[i] = (wlb, days, depb)
+    m = (wlb >= wl_lo) & (wlb <= wl_hi)
+
+    draw_bands(ax, label_them=False)
+
+    geo = None
+    if cfg.get('show_geometric'):
+        z = np.load(os.path.join(cfg['spectra_dir'],
+                                 col['key'] + cfg['spectra_suffix']),
+                    allow_pickle=True)
+        geo = float(z['geometric_ppm'])
+        ax.axhline(geo, color='0.45', lw=0.7, ls=':', zorder=2)
+
+    for e, day in enumerate(EPOCHS):
+        j = int(np.argmin(np.abs(days - day)))
+        ax.plot(wlb[m], depb[j][m], color=ECOL[e], lw=0.9,
+                label=f"day {days[j]}", zorder=3)
+        raw_lo = min(raw_lo, depb[j][m].min())
+        raw_hi = max(raw_hi, depb[j][m].max())
+    if geo is not None:
+        raw_lo = min(raw_lo, geo)
+
+    style_spectral_axis(ax)
+    ax.set_title(f"{col['balance']}\n"
+                 + r"$\mathrm{\mathsf{" + col['case'].replace('_', r'\_') + r"}}$"
+                 + f"  ({col['atm']})",
+                 fontsize=8.5, pad=6)
+    if i == 0:
+        ax.set_ylabel(cfg['raw_ylabel'])
+        ax.legend(loc='upper left', frameon=False, handlelength=1.4,
+                  bbox_to_anchor=(0.0, 0.86))
+
+# One shared scale across the raw row: the four sit on the same geometric floor,
+# and per-column limits would conceal that hab2's quiet continuum already stands
+# well above ben1's before any eruption.
+pad = 0.06 * (raw_hi - raw_lo)
+for i in range(ncol):
+    axes[0, i].set_ylim(raw_lo - pad, raw_hi + pad)
+    axes[0, i].tick_params(labelbottom=False)
+    if i > 0:
+        axes[0, i].set_yticklabels([])
+if cfg.get('show_geometric'):
+    # Outside the axes on the right: inside, the line sits at the very bottom
+    # of the panel where every case's continuum also runs, so any in-axes
+    # placement lands on a curve.
+    axes[0, ncol - 1].annotate(
+        cfg.get('geometric_label', 'geometric'),
+        xy=(1.005, geo), xycoords=('axes fraction', 'data'),
+        fontsize=6.0, color='0.4', ha='left', va='center')
+print(f"  shared raw range {raw_lo:.1f}-{raw_hi:.1f} ppm")
+
+# ---------------------------------------------------------------------------
+# ROW 2 -- difference spectra
+# ---------------------------------------------------------------------------
+print('row 2: transmission spectra (difference from day 0)')
+spec_lims = []
+for i, col in enumerate(COLS):
+    ax = axes[1, i]
+    wlb, days, depb = SPEC[i]
+    d0 = depb[0]
+
+    m = (wlb >= wl_lo) & (wlb <= wl_hi)
+    # Labelled once, on row 2: its top margin is clear, whereas row 1's
+    # curves run right to the axis top.
+    draw_bands(ax, label_them=(i == 0), y_base=0.955)
 
     ax.axhline(0.0, color='0.55', lw=0.6, zorder=1)
 
@@ -176,34 +252,26 @@ for i, col in enumerate(COLS):
         peak = max(peak, np.abs(diff[m]).max())
     spec_lims.append(peak)
 
-    ax.set_xscale('log')
-    ax.set_xlim(wl_lo, wl_hi)
-    ax.set_xticks([1, 2, 3, 5, 7, 10])
-    ax.set_xticklabels(['1', '2', '3', '5', '7', '10'])
-    ax.set_title(f"{col['balance']}\n"
-                 + r"$\mathrm{\mathsf{" + col['case'].replace('_', r'\_') + r"}}$"
-                 + f"  ({col['atm']})",
-                 fontsize=8.5, pad=6)
+    style_spectral_axis(ax)
     if i == 0:
         ax.set_ylabel(cfg['spectra_ylabel'])
-        ax.legend(loc='upper left', frameon=False, handlelength=1.4,
-                  bbox_to_anchor=(0.0, 0.86))
     ax.set_xlabel(r'wavelength [$\mu$m]')
     print(f"  {col['key']:30s} peak |diff| {peak:6.1f} ppm")
 
+
 # One shared y-scale across the top row, so panel heights mean the same thing.
-ytop = 1.12 * max(spec_lims)
+ytop = 1.26 * max(spec_lims)
 for i in range(ncol):
-    axes[0, i].set_ylim(-0.18 * ytop, ytop)
+    axes[1, i].set_ylim(-0.18 * ytop, ytop)
     if i > 0:
-        axes[0, i].set_yticklabels([])
+        axes[1, i].set_yticklabels([])
 
 # ---------------------------------------------------------------------------
 # BOTTOM ROW -- GCM burdens
 # ---------------------------------------------------------------------------
-print('bottom row: GCM burdens')
+print('row 3: GCM burdens')
 for i, col in enumerate(COLS):
-    ax = axes[1, i]
+    ax = axes[2, i]
     for spec in cfg['burden_vars']:
         d, y = load_burden(col, spec['var'])
         if d is None:
@@ -237,6 +305,9 @@ for i, col in enumerate(COLS):
         ax.set_yticklabels([])
 
 fig.tight_layout(rect=[0, 0, 1, 0.99])
+# Rows 1 and 2 share a wavelength axis and belong visually together; row 3 is a
+# different abscissa (days) and keeps its own breathing room.
+fig.subplots_adjust(hspace=0.30)
 stem = os.path.join(here, cfg['outfile_stem'])
 for ext in ('pdf', 'eps'):
     fig.savefig(f'{stem}.{ext}', bbox_inches='tight')

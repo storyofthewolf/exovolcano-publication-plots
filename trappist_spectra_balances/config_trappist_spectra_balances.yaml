@@ -95,6 +95,27 @@ epoch_colors: ['#7fc7ff', '#3d8bfd', '#1b3f8b', '#0b1f47']
 wl_range_um: [0.6, 12.0]
 spectra_ylabel: "$\\Delta$ transit depth [ppm]"
 
+# ---------------------------------------------------------------------------
+# ROW 1 -- RAW transit depth, the same epochs undifferenced.
+#
+# The difference row below is the better view of the eruption, but it discards
+# two things a reader needs: the absolute depth (~4656 ppm geometric, so the
+# eruption signal is a ~2% perturbation) and the molecular bands the quiet
+# atmosphere already has. Showing raw first and difference second says "here is
+# the spectrum, and here is the part the eruption is responsible for."
+#
+# ONE SHARED Y-AXIS across the four columns. All four sit on the same 4655.6 ppm
+# geometric floor and span ~80-105 ppm, so a common scale is both legible and
+# honest -- per-column limits would hide that hab2's quiet continuum already
+# sits ~17 ppm above ben1's before any eruption.
+raw_ylabel: "transit depth [ppm]"
+
+# Drawn as a reference line on the raw row: the depth of an opaque disk of the
+# solid planet, i.e. what a transit would give with no atmosphere at all.
+# Everything above it is atmosphere.
+show_geometric: true
+geometric_label: "geometric (no atmosphere)"
+
 # Bands annotated across the top row. Drawn as light spans, labeled once in
 # the leftmost panel only, so the annotation does not repeat four times.
 # `row` staggers the labels onto two lines: at 0.6-12 um the 5.5-7.0, 7.0-7.7
@@ -144,5 +165,7 @@ burden_ylim: [1.0e-02, 1.0e+06]
 # which part of the mechanism each spectrum samples.
 mark_epochs: true
 
-figsize: [13.4, 6.6]
+# Three rows: raw spectra, difference spectra, burdens.
+figsize: [13.4, 9.4]
+height_ratios: [1.0, 1.0, 0.85]
 outfile_stem: fig_trappist_spectra_balances
