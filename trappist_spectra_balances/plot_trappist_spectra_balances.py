@@ -54,6 +54,7 @@ matplotlib.use('Agg')
 import matplotlib.pyplot as plt
 from matplotlib.lines import Line2D
 import matplotlib.patheffects as pe
+import matplotlib.colors as mcolors
 
 plt.rcParams.update({
     'font.family': 'serif',
@@ -76,6 +77,17 @@ with open(os.path.join(here, args.config)) as f:
 COLS = cfg['columns']
 EPOCHS = cfg['epochs_days']
 ECOL = cfg['epoch_colors']
+
+
+def _blend(color, frac, bg='white'):
+    """Opaque stand-in for `color` at opacity `frac` over `bg`.
+
+    Used instead of alpha= so that the EPS and PDF backends agree; see the
+    epoch-line call site for why transparency cannot be used here.
+    """
+    c = np.array(mcolors.to_rgb(color))
+    b = np.array(mcolors.to_rgb(bg))
+    return tuple(frac * c + (1.0 - frac) * b)
 
 
 def bin_to_resolution(wl, depth, resolution):
@@ -306,8 +318,14 @@ for i, col in enumerate(COLS):
                   f"max {finite.max():.3e} Tg  end {y[-1]:.3e} Tg")
 
     if cfg.get('mark_epochs'):
+        # Pre-blend toward white instead of using alpha. The PostScript backend
+        # drops transparency entirely ("partially transparent artists will be
+        # rendered opaque"), so an alpha'd line renders full-strength in the EPS
+        # and washed-out in the PDF, and the manuscript, which includes the EPS,
+        # then disagrees with the reference PDF built here. Blending gives both
+        # backends the same colour.
         for e, day in enumerate(EPOCHS):
-            ax.axvline(day, color=ECOL[e], lw=0.6, alpha=0.55, zorder=0)
+            ax.axvline(day, color=_blend(ECOL[e], 0.55), lw=0.6, zorder=0)
 
     ax.set_yscale('log')
     ax.set_xlim(*cfg['burden_xlim'])
