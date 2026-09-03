@@ -185,8 +185,12 @@ for i, col in enumerate(COLS):
 
     for e, day in enumerate(EPOCHS):
         j = int(np.argmin(np.abs(days - day)))
-        ax.plot(wlb[m], depb[j][m], color=ECOL[e], lw=0.9,
-                label=f"day {days[j]}", zorder=3)
+        base = (day == 0)
+        ax.plot(wlb[m], depb[j][m], color=ECOL[e],
+                lw=1.0 if base else 0.9,
+                ls='--' if base else '-',
+                zorder=2 if base else 3,
+                label=f"day {days[j]}" + (" (pre-eruption)" if base else ""))
         raw_lo = min(raw_lo, depb[j][m].min())
         raw_hi = max(raw_hi, depb[j][m].max())
     if geo is not None:
@@ -247,9 +251,16 @@ for i, col in enumerate(COLS):
             print(f"    NOTE: epoch {day} d not computed; using {days[j]} d. "
                   f"Available: {list(days)}")
         diff = depb[j] - d0
-        ax.plot(wlb[m], diff[m], color=ECOL[e], lw=0.9,
-                label=f"day {days[j]}", zorder=3)
-        peak = max(peak, np.abs(diff[m]).max())
+        base = (day == 0)
+        # Day 0 IS the reference here, so its difference is identically zero;
+        # it coincides with the zero line and is drawn only to make that
+        # explicit, never as a curve carrying information.
+        ax.plot(wlb[m], diff[m], color=ECOL[e],
+                lw=1.0 if base else 0.9,
+                ls='--' if base else '-',
+                zorder=2 if base else 3)
+        if not base:
+            peak = max(peak, np.abs(diff[m]).max())
     spec_lims.append(peak)
 
     style_spectral_axis(ax)

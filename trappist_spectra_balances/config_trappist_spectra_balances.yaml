@@ -89,8 +89,17 @@ resolution: 250.0
 # exovolcano-spectra/scripts/run_all_suites.sh. The loader snaps to the nearest
 # available epoch rather than failing, so a stale .npz silently plots the wrong
 # day -- it now prints the day it actually used; check that output.
-epochs_days: [25, 100, 600, 2000]
-epoch_colors: ['#7fc7ff', '#3d8bfd', '#1b3f8b', '#0b1f47']
+# Day 0 is the pre-eruption state and day 5 the early plume, added so the top
+# rows show the onset as well as the decay. Note that day 0 is identically zero
+# in the DIFFERENCE row by construction -- it is the reference the row is drawn
+# against -- so it plots as the flat line on y = 0. That is deliberate: it marks
+# the baseline the other curves are measured from rather than adding
+# information of its own.
+epochs_days: [0, 5, 25, 100, 600, 2000]
+
+# Six steps, light (early) to dark (late). Day 0 is grey rather than part of the
+# blue ramp, since it is the reference state and not a member of the sequence.
+epoch_colors: ['#999999', '#b3d9ff', '#7fc7ff', '#3d8bfd', '#1b3f8b', '#0b1f47']
 
 wl_range_um: [0.6, 12.0]
 spectra_ylabel: "$\\Delta$ transit depth [ppm]"
@@ -152,25 +161,25 @@ burden_xlabel: "days since eruption"
 # Full integration, matching the epochs above. At 600 d the late decay that
 # distinguishes columns 3 and 4 was still off the right edge.
 burden_xlim: [0, 2200]
-# Seven decades. The top is set to 1e5 Tg, which holds every SO2 and aerosol
-# curve in the figure with room to spare (the largest is hab2's 5.7e3 Tg of
-# aerosol) and keeps the sulfur cycle -- what the figure is about -- filling the
-# panel rather than squashed against the floor.
+# Ten decades, 1e-2 to 1e8 Tg. The top is set high enough to hold BOTH moist
+# atmospheres' total water inventories on-scale -- hab1 at 3.1e6 Tg and hab2 at
+# 1.9e7 Tg -- because the vertical gap between those two dashed curves is one of
+# the figure's four balances: it is the ~6x difference in ambient water that
+# makes hab2 rain its aerosol out within months while hab1 holds it for years.
+# Plotting them makes that argument visible on the same axis rather than
+# leaving it to the caption.
 #
-# The moist atmospheres' TOTAL WATER runs off the top by design: hab1 holds
-# 3.1e6 Tg and hab2 1.9e7 Tg, so those dashed curves leave the axis entirely.
-# That is the intended reading. On hab1/hab2 water is not a participant to be
-# tracked against the sulfur, it is an effectively infinite reservoir, and a
-# curve pinned above the frame says so more directly than one compressed into
-# the top decade. The dry columns, where water IS the limiting reactant and the
-# eruption's own delivery is the whole supply, keep their water curve on-scale.
+# The cost is real and was weighed: ten decades compress the sulfur curves
+# relative to a 1e5 top, and the sharp collapse in column 4 is less dramatic
+# than it can be made to look. Their SHAPE, which is what the row is read for,
+# survives.
 #
 # The full data range spans ~20 decades (ben1 delivers 3.2e-14 Tg of water);
 # plotting all of it compresses every curve into an unreadable band. Curves
 # leaving the top or bottom are clipped, not dropped.
 # NOTE: YAML 1.1 needs a SIGNED exponent to parse these as floats; "1.0e8" is
 # read as a string and fails downstream in set_ylim.
-burden_ylim: [1.0e-02, 1.0e+05]
+burden_ylim: [1.0e-02, 1.0e+08]
 
 # Marks the epochs of the top row onto the bottom row, so the reader can see
 # which part of the mechanism each spectrum samples.
