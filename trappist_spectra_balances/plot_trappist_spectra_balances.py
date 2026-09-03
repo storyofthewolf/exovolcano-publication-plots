@@ -140,13 +140,19 @@ wl_lo, wl_hi = cfg['wl_range_um']
 def draw_bands(ax, label_them, y_base=0.972):
     """Shade the diagnostic bands; label them only on the panel that asks."""
     for band in cfg['bands']:
-        ax.axvspan(band['lo'], band['hi'], color=band['color'], alpha=0.13, lw=0)
+        # The band colours are already very light, so they are laid down at
+        # full opacity rather than at the old alpha=0.13 over a saturated
+        # colour: alpha on a pale fill washes it out to nothing. The label
+        # takes its own darker colour, since a 6.5 pt glyph in the fill colour
+        # would be illegible.
+        ax.axvspan(band['lo'], band['hi'], color=band['color'], zorder=0, lw=0)
         if label_them and band.get('label'):
             # Two rows, so the adjacent 5.5-8.9 um spans do not collide.
             y = y_base - 0.062 * band.get('row', 0)
             ax.text(0.5 * (band['lo'] + band['hi']), y, band['label'],
                     transform=ax.get_xaxis_transform(), ha='center', va='top',
-                    fontsize=6.5, color=band['color'], zorder=5,
+                    fontsize=6.5,
+                    color=band.get('label_color', band['color']), zorder=5,
                     path_effects=[pe.withStroke(linewidth=1.8,
                                                 foreground='white')])
 

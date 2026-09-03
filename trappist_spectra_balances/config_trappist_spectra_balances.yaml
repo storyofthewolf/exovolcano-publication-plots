@@ -130,12 +130,16 @@ geometric_label: "geometric (no atmosphere)"
 # `row` staggers the labels onto two lines: at 0.6-12 um the 5.5-7.0, 7.0-7.7
 # and 8.4-8.9 spans are adjacent on a log axis and their labels collide on one
 # line. Repeated species are labeled once (label: null draws the span only).
+# `color` shades the band; `label_color` draws its text. They are separate so
+# the shading can sit very light without washing out the label, which at 6.5 pt
+# needs to stay legible. Lightened 2026-09-03: the previous saturated fills read
+# as too dark and too bold over the spectra.
 bands:
-  - {label: "H$_2$O",   lo: 2.5, hi: 2.9, color: '#4c9f70', row: 0}
-  - {label: "CO$_2$",   lo: 4.0, hi: 4.8, color: '#b0b0b0', row: 0}
-  - {label: null,       lo: 5.5, hi: 7.0, color: '#4c9f70', row: 0}
-  - {label: "SO$_2$",   lo: 7.0, hi: 7.7, color: '#c8792a', row: 1}
-  - {label: null,       lo: 8.4, hi: 8.9, color: '#c8792a', row: 1}
+  - {label: "H$_2$O",   lo: 2.5, hi: 2.9, color: '#e4f0fa', label_color: '#3d7ab8', row: 0}
+  - {label: "CO$_2$",   lo: 4.0, hi: 4.8, color: '#ededed', label_color: '#6e6e6e', row: 0}
+  - {label: null,       lo: 5.5, hi: 7.0, color: '#e4f0fa', label_color: '#3d7ab8', row: 0}
+  - {label: "SO$_2$",   lo: 7.0, hi: 7.7, color: '#fdeedd', label_color: '#c0761f', row: 1}
+  - {label: null,       lo: 8.4, hi: 8.9, color: '#fdeedd', label_color: '#c0761f', row: 1}
 
 # ---------------------------------------------------------------------------
 # BOTTOM ROW -- GCM burdens, the mechanism behind the row above.
