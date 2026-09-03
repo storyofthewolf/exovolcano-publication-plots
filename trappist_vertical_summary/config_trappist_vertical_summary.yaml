@@ -1,0 +1,60 @@
+# Config for the TRAPPIST-1 e vertical-structure SUMMARY figure.
+#
+# One 2 x 2 panel of sulfate aerosol height-time structure, one atmosphere per
+# panel, all on ONE shared colour scale. It replaces the four per-atmosphere
+# figures in the main text; those move to an appendix, where their full water
+# and aerosol rows and per-suite scales remain available.
+#
+# WHY ONE SHARED SCALE HERE, WHEN THE APPENDIX FIGURES USE PER-SUITE SCALES.
+# The appendix figures exist to compare the five CASES within one atmosphere,
+# so a per-suite scale is right there. This figure exists to compare the four
+# ATMOSPHERES against each other, which a per-panel scale would make impossible
+# -- identical colours would mean different values. The cost is that the range
+# is wide enough that the dry pair's aerosol sits low in the bar; that is the
+# honest depiction, since they genuinely hold ~1000x less aerosol than hab2 at
+# peak.
+#
+# WHY AEROSOL AND NOT WATER. Aerosol is what a transmission spectrum records
+# and what the removal-regime argument is about. The water rows carry the
+# stoichiometric story, which is made in the appendix figures and in the
+# balances figure's burden row; repeating it here would spend a panel restating
+# rather than adding.
+#
+# ONE CASE PER PANEL: tambora_100x, the strongest sulfur injection, which is
+# where the four atmospheres differ most and which is also the case the
+# balances figure follows in three of its four columns. The others are in the
+# appendix. The eruption is named in each panel so the figure is readable
+# without the caption.
+
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+subpath_hz_profile: data/profiles/VOLCHZMD.csv
+subpath_q_profile:  data/profiles/Q.csv
+
+case: tambora_100x
+
+# Which field this figure draws: 'aerosol' (VOLCHZMD) or 'water' (Q). The water
+# companion is generated from the same script via config_..._water.yaml.
+field: aerosol
+
+panels:
+  - {atm: ben1, label: "\\texttt{ben1}: dry land, N$_2$",    tag: "dry, N$_2$"}
+  - {atm: ben2, label: "\\texttt{ben2}: dry land, CO$_2$",   tag: "dry, CO$_2$"}
+  - {atm: hab1, label: "\\texttt{hab1}: aquaplanet, N$_2$",  tag: "moist, N$_2$"}
+  - {atm: hab2, label: "\\texttt{hab2}: aquaplanet, CO$_2$", tag: "moist, CO$_2$"}
+
+# One scale for all four panels. Spans the suite maxima (hab2 peaks at
+# 1.9e-9 kg/m3, ben2 at 4.0e-12) with a floor six decades down, matching the
+# convention of the per-atmosphere figures.
+hz_limits: [1.0e-15, 1.0e-09]
+
+xlim_years: [0, 6]
+contour_alt_max_km: auto
+
+# Annotated on each panel: the e-folding time of the column-integrated aerosol
+# from its own peak, which is the number the removal-regime argument turns on.
+# Computed from the data at plot time, never typed in.
+annotate_efold: true
+
+cmap_hz: inferno
+figsize: [8.6, 6.4]
+outfile_stem: fig_trappist_vertical_summary

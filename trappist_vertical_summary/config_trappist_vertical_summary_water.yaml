@@ -1,0 +1,79 @@
+# Config for the TRAPPIST-1 e vertical-structure SUMMARY figure.
+#
+# One 2 x 2 panel of sulfate aerosol height-time structure, one atmosphere per
+# panel, all on ONE shared colour scale. It replaces the four per-atmosphere
+# figures in the main text; those move to an appendix, where their full water
+# and aerosol rows and per-suite scales remain available.
+#
+# WHY ONE SHARED SCALE HERE, WHEN THE APPENDIX FIGURES USE PER-SUITE SCALES.
+# The appendix figures exist to compare the five CASES within one atmosphere,
+# so a per-suite scale is right there. This figure exists to compare the four
+# ATMOSPHERES against each other, which a per-panel scale would make impossible
+# -- identical colours would mean different values. The cost is that the range
+# is wide enough that the dry pair's aerosol sits low in the bar; that is the
+# honest depiction, since they genuinely hold ~1000x less aerosol than hab2 at
+# peak.
+#
+# THIS IS THE WATER COMPANION to the aerosol summary. It draws the Hunga
+# 100x case rather than Tambora 100x: Hunga is the water-rich template, so it
+# is the injection that makes water the subject. On the dry pair the control
+# holds Q == 0 at every level, so everything visible here was delivered by the
+# eruption; on the moist pair the ambient reservoir dominates and the injected
+# plume is not separable by eye, which is itself the result.
+#
+# ONE CASE PER PANEL: tambora_100x, the strongest sulfur injection, which is
+# where the four atmospheres differ most and which is also the case the
+# balances figure follows in three of its four columns. The others are in the
+# appendix. The eruption is named in each panel so the figure is readable
+# without the caption.
+
+base_dir: /Users/wolfe/Desktop/projects/volcanos/remote_analysis
+subpath_hz_profile: data/profiles/VOLCHZMD.csv
+subpath_q_profile:  data/profiles/Q.csv
+
+case: hunga_100x
+
+# Which field this figure draws: 'aerosol' (VOLCHZMD) or 'water' (Q). The water
+# companion is generated from the same script via config_..._water.yaml.
+field: water
+
+panels:
+  - {atm: ben1, label: "\\texttt{ben1}: dry land, N$_2$",    tag: "dry, N$_2$"}
+  - {atm: ben2, label: "\\texttt{ben2}: dry land, CO$_2$",   tag: "dry, CO$_2$"}
+  - {atm: hab1, label: "\\texttt{hab1}: aquaplanet, N$_2$",  tag: "moist, N$_2$"}
+  - {atm: hab2, label: "\\texttt{hab2}: aquaplanet, CO$_2$", tag: "moist, CO$_2$"}
+
+# One scale for all four panels. Spans the suite maxima (hab2 peaks at
+# 1.9e-9 kg/m3, ben2 at 4.0e-12) with a floor six decades down, matching the
+# convention of the per-atmosphere figures.
+hz_limits: [1.0e-15, 1.0e-09]
+
+# Five decades, 1e-7 to 1e-2, set from the data's own distribution rather than
+# from its extremes. Measured 5th-95th percentiles of the plotted cases:
+#   ben1  6.8e-8 - 8.1e-6   (only ~2 decades wide)
+#   hab1  2.9e-7 - 1.4e-3
+#   hab2  2.2e-5 - 5.7e-3
+#
+# A SHARED SCALE CANNOT FULLY SERVE BOTH PAIRS HERE, and that is the honest
+# outcome rather than a defect to tune away: the moist atmospheres hold roughly
+# a hundred times more water than the dry ones at every level, so on any common
+# axis the dry panels must sit low and vary little. Wider floors were tried
+# (1e-10, then 1e-8) and made it worse, compressing ben1's entire two-decade
+# field into a single tone. This range keeps the dry plume distinguishable from
+# its own background while leaving the moist pair on-scale.
+#
+# The reader wanting within-atmosphere structure on the dry pair should use the
+# appendix figures, whose per-suite scales are built for exactly that.
+q_limits: [1.0e-07, 1.0e-02]
+
+xlim_years: [0, 6]
+contour_alt_max_km: auto
+
+# Annotated on each panel: the e-folding time of the column-integrated aerosol
+# from its own peak, which is the number the removal-regime argument turns on.
+# Computed from the data at plot time, never typed in.
+annotate_efold: true
+
+cmap_hz: inferno
+figsize: [8.6, 6.4]
+outfile_stem: fig_trappist_vertical_summary_water
