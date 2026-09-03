@@ -36,19 +36,28 @@
 # axes swapped. ben1/ben2 are the DRY pair (their controls hold Q == 0 at every
 # level, which is the quick check); hab1/hab2 are the moist pair.
 #
-# WHY THE WATER ROW IS AN ANOMALY, NOT THE RAW FIELD. On hab1/hab2 the ambient
-# water column exceeds the injected plume by five or more orders of magnitude,
-# so a raw-Q panel of an eruption is visually identical to its control and shows
-# nothing. Differencing against each atmosphere's own no-eruption control is
-# what makes the injected water visible. Consequences to respect:
-#   - The control is therefore not plotted as a case of its own; see the
-#     `cases` block below.
-#   - The control is an independent realization, so its internal variability
-#     does NOT cancel in the difference. On the moist atmospheres the anomaly
-#     therefore carries a genuine noise floor and goes both positive and
-#     negative; only excursions well outside that mottling are signal. The dry
-#     atmospheres have Q == 0 controls, so there the anomaly IS the raw field
-#     and is exact.
+# THE WATER ROW IS THE RAW FIELD, NOT AN ANOMALY. Both rows plot Q and
+# VOLCHZMD in native units on a log scale; nothing is differenced against a
+# control. Corrected 2026-09-02: this block previously described an anomaly
+# convention, with a control that was "therefore not plotted as a case of its
+# own." Neither was ever true of plot_trappist_vertical_structure.py -- its
+# docstring says raw, the `cases` block below lists the control first, and the
+# rendered figures show a control panel in every one. A reader who trusted this
+# header would have misread all four figures.
+#
+# What the raw convention costs, and why it is still right: on hab1/hab2 the
+# ambient water exceeds the injected plume by orders of magnitude, so their
+# water panels look much like their controls and the injected plume is NOT
+# visible there. That is a real and reportable result -- it is the same
+# "the wetter the planet, the more completely its own variability hides the
+# eruption" conclusion the manuscript draws -- rather than a defect to be
+# differenced away. The diagnostic that does survive on the moist pair is the
+# upper atmosphere above ~45 km, where the ambient reservoir is thin; see the
+# manuscript's Section 4 discussion.
+#
+# On the DRY pair the distinction is moot: their controls hold Q == 0 at every
+# level and time, so the raw field and the anomaly are the same thing, and the
+# control panel is drawn as a labelled grey block rather than as a colour.
 #
 # THE 100x RUNG IS NOT A CLEAN LADDER MEMBER. Those cases inject over 48 h
 # rather than 24 h (the per-timestep tendency into one column exceeds what the
