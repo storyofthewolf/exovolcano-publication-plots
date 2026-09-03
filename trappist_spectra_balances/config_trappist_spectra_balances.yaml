@@ -152,14 +152,25 @@ burden_xlabel: "days since eruption"
 # Full integration, matching the epochs above. At 600 d the late decay that
 # distinguishes columns 3 and 4 was still off the right edge.
 burden_xlim: [0, 2200]
-# Six decades, chosen to hold every curve that carries the argument: hab1's
-# 4.6e3 Tg aerosol peak down to ~1e-2 Tg, where the decaying tails cease to
-# matter. The full range of the data spans ~20 decades (ben1 delivers 3.2e-14 Tg
-# of water), but plotting all of it compresses every curve into an unreadable
-# band. Curves leaving the top or bottom are clipped, not dropped.
+# Seven decades. The top is set to 1e5 Tg, which holds every SO2 and aerosol
+# curve in the figure with room to spare (the largest is hab2's 5.7e3 Tg of
+# aerosol) and keeps the sulfur cycle -- what the figure is about -- filling the
+# panel rather than squashed against the floor.
+#
+# The moist atmospheres' TOTAL WATER runs off the top by design: hab1 holds
+# 3.1e6 Tg and hab2 1.9e7 Tg, so those dashed curves leave the axis entirely.
+# That is the intended reading. On hab1/hab2 water is not a participant to be
+# tracked against the sulfur, it is an effectively infinite reservoir, and a
+# curve pinned above the frame says so more directly than one compressed into
+# the top decade. The dry columns, where water IS the limiting reactant and the
+# eruption's own delivery is the whole supply, keep their water curve on-scale.
+#
+# The full data range spans ~20 decades (ben1 delivers 3.2e-14 Tg of water);
+# plotting all of it compresses every curve into an unreadable band. Curves
+# leaving the top or bottom are clipped, not dropped.
 # NOTE: YAML 1.1 needs a SIGNED exponent to parse these as floats; "1.0e8" is
 # read as a string and fails downstream in set_ylim.
-burden_ylim: [1.0e-02, 1.0e+06]
+burden_ylim: [1.0e-02, 1.0e+05]
 
 # Marks the epochs of the top row onto the bottom row, so the reader can see
 # which part of the mechanism each spectrum samples.
