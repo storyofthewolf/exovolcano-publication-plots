@@ -115,9 +115,13 @@ for k, spec in enumerate(panels):
 
     # Clip rather than mask, so a panel never shows white holes where the
     # field is merely small; below-floor reads as the lowest colour.
+    # rasterized: the mesh is ~2191 daily records x 51 levels per panel, which
+    # as vector paths makes a ~90 MB EPS that exceeds GitHub's 50 MB file limit
+    # and blocks the Overleaf sync. Only the mesh is rasterized; axes, ticks,
+    # labels and the colorbar stay vector. Matches every other plot script here.
     mesh = ax.pcolormesh(years, alt, np.clip(f.T, vmin, vmax),
                          norm=LogNorm(vmin=vmin, vmax=vmax),
-                         cmap=CMAP, shading='auto')
+                         cmap=CMAP, shading='auto', rasterized=True)
 
     ax.set_ylim(0, alt_max)
     ax.set_xlim(*cfg['xlim_years'])
@@ -161,5 +165,5 @@ cb.set_label(CBLABEL, fontsize=8.5)
 
 stem = os.path.join(here, cfg['outfile_stem'])
 for ext in ('pdf', 'eps'):
-    fig.savefig(f'{stem}.{ext}', bbox_inches='tight')
+    fig.savefig(f'{stem}.{ext}', bbox_inches='tight', dpi=300)
     print(f'wrote {stem}.{ext}')
