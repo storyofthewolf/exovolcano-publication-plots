@@ -123,7 +123,9 @@ raw_ylabel: "transit depth [ppm]"
 # solid planet, i.e. what a transit would give with no atmosphere at all.
 # Everything above it is atmosphere.
 show_geometric: true
-geometric_label: "geometric (no atmosphere)"
+# Label text removed 2026-09-04 (author request); the dotted line stays and the
+# caption explains it. Set a string here to bring the annotation back.
+geometric_label: null
 
 # Bands annotated across the top row. Drawn as light spans, labeled once in
 # the leftmost panel only, so the annotation does not repeat four times.

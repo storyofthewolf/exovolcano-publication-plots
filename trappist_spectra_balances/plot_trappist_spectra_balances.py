@@ -233,12 +233,13 @@ for i in range(ncol):
     axes[0, i].tick_params(labelbottom=False)
     if i > 0:
         axes[0, i].set_yticklabels([])
-if cfg.get('show_geometric'):
-    # Outside the axes on the right: inside, the line sits at the very bottom
-    # of the panel where every case's continuum also runs, so any in-axes
-    # placement lands on a curve.
+if cfg.get('show_geometric') and cfg.get('geometric_label'):
+    # Label is optional and off by default: the dotted reference line reads
+    # clearly on its own and the caption already says what it is, while the
+    # text had to sit outside the axes (inside, it lands on a curve, since the
+    # line runs along the bottom where every case's continuum also runs).
     axes[0, ncol - 1].annotate(
-        cfg.get('geometric_label', 'geometric'),
+        cfg['geometric_label'],
         xy=(1.005, geo), xycoords=('axes fraction', 'data'),
         fontsize=6.0, color='0.4', ha='left', va='center')
 print(f"  shared raw range {raw_lo:.1f}-{raw_hi:.1f} ppm")
