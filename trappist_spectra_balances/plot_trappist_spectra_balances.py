@@ -143,9 +143,27 @@ def load_burden(col, var):
 
 
 ncol = len(COLS)
-fig, axes = plt.subplots(3, ncol, figsize=cfg['figsize'],
-                         gridspec_kw={'height_ratios':
-                                      cfg.get('height_ratios', [1, 1, 0.85])})
+# Two different row gaps are needed, and a single hspace cannot give them:
+# rows 1 and 2 share the wavelength abscissa (row 1 hides its tick labels and
+# row 2 carries the one x-label for both), so they close up tight and read as
+# one block; row 3 is a different abscissa in days and has to clear row 2's
+# x-label as well as its own ticks. An outer 2-row gridspec sets the wide gap,
+# and a nested 2-row spec inside its first cell sets the tight one.
+_hr = cfg.get('height_ratios', [1, 1, 0.85])
+fig = plt.figure(figsize=cfg['figsize'])
+_outer = fig.add_gridspec(2, 1,
+                          height_ratios=[_hr[0] + _hr[1], _hr[2]],
+                          hspace=cfg.get('hspace_rows23', 0.17))
+_top = _outer[0].subgridspec(2, ncol, height_ratios=_hr[:2],
+                             hspace=cfg.get('hspace_rows12', 0.05),
+                             wspace=cfg.get('wspace', 0.08))
+_bot = _outer[1].subgridspec(1, ncol, wspace=cfg.get('wspace', 0.08))
+axes = np.empty((3, ncol), dtype=object)
+for _r in range(2):
+    for _c in range(ncol):
+        axes[_r, _c] = fig.add_subplot(_top[_r, _c])
+for _c in range(ncol):
+    axes[2, _c] = fig.add_subplot(_bot[0, _c])
 
 wl_lo, wl_hi = cfg['wl_range_um']
 
@@ -340,10 +358,10 @@ for i, col in enumerate(COLS):
     else:
         ax.set_yticklabels([])
 
-fig.tight_layout(rect=[0, 0, 1, 0.99])
-# Rows 1 and 2 share a wavelength axis and belong visually together; row 3 is a
-# different abscissa (days) and keeps its own breathing room.
-fig.subplots_adjust(hspace=0.30)
+# No tight_layout here: it recomputes every gap and would discard the two
+# distinct row spacings set on the gridspecs above. Margins are set explicitly
+# instead, and bbox_inches='tight' at save time trims whatever is left over.
+fig.subplots_adjust(left=0.055, right=0.995, top=0.945, bottom=0.075)
 stem = os.path.join(here, cfg['outfile_stem'])
 for ext in ('pdf', 'eps'):
     fig.savefig(f'{stem}.{ext}', bbox_inches='tight')
