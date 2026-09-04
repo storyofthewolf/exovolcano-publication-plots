@@ -181,9 +181,9 @@ def draw_bands(ax, label_them, y_base=0.972):
             y = y_base - 0.062 * band.get('row', 0)
             ax.text(0.5 * (band['lo'] + band['hi']), y, band['label'],
                     transform=ax.get_xaxis_transform(), ha='center', va='top',
-                    fontsize=6.5,
-                    color=band.get('label_color', band['color']), zorder=5,
-                    path_effects=[pe.withStroke(linewidth=1.8,
+                    fontsize=cfg.get('band_label_size', 8.0),
+                    color=cfg.get('band_label_color', 'black'), zorder=5,
+                    path_effects=[pe.withStroke(linewidth=2.2,
                                                 foreground='white')])
 
 
@@ -209,7 +209,10 @@ for i, col in enumerate(COLS):
     SPEC[i] = (wlb, days, depb)
     m = (wlb >= wl_lo) & (wlb <= wl_hi)
 
-    draw_bands(ax, label_them=False)
+    # Band labels ride on the top-left panel (author request 2026-09-04).
+    # The y-limit block below adds headroom so they clear both the spectra
+    # and this panel's epoch legend.
+    draw_bands(ax, label_them=(i == 0), y_base=0.985)
 
     geo = None
     if cfg.get('show_geometric'):
@@ -246,8 +249,11 @@ for i, col in enumerate(COLS):
 # and per-column limits would conceal that hab2's quiet continuum already stands
 # well above ben1's before any eruption.
 pad = 0.06 * (raw_hi - raw_lo)
+# Extra headroom at the top only, so the band labels on the leftmost panel clear
+# both the spectra and the epoch legend. Author sanctioned ~10 ppm for this.
+head = float(cfg.get('raw_headroom_ppm', 10.0))
 for i in range(ncol):
-    axes[0, i].set_ylim(raw_lo - pad, raw_hi + pad)
+    axes[0, i].set_ylim(raw_lo - pad, raw_hi + pad + head)
     axes[0, i].tick_params(labelbottom=False)
     if i > 0:
         axes[0, i].set_yticklabels([])
@@ -275,7 +281,7 @@ for i, col in enumerate(COLS):
     m = (wlb >= wl_lo) & (wlb <= wl_hi)
     # Labelled once, on row 2: its top margin is clear, whereas row 1's
     # curves run right to the axis top.
-    draw_bands(ax, label_them=(i == 0), y_base=0.955)
+    draw_bands(ax, label_them=False)
 
     ax.axhline(0.0, color='0.55', lw=0.6, zorder=1)
 
