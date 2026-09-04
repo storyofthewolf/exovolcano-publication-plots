@@ -168,8 +168,15 @@ for _c in range(ncol):
 wl_lo, wl_hi = cfg['wl_range_um']
 
 def draw_bands(ax, label_them, y_base=0.972):
-    """Shade the diagnostic bands; label them only on the panel that asks."""
-    for band in cfg['bands']:
+    """Shade the diagnostic bands; label them only on the panel that asks.
+
+    Disabled by default (show_bands false). The spans were removed because they
+    misattributed the absorption, most clearly at 2.5-2.9 um, which is a
+    saturated CO2 band rather than the H2O feature it was labelled as.
+    """
+    if not cfg.get('show_bands', True):
+        return
+    for band in cfg.get('bands') or []:
         # The band colours are already very light, so they are laid down at
         # full opacity rather than at the old alpha=0.13 over a saturated
         # colour: alpha on a pale fill washes it out to nothing. The label

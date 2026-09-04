@@ -122,12 +122,12 @@ raw_ylabel: "transit depth [ppm]"
 # Drawn as a reference line on the raw row: the depth of an opaque disk of the
 # solid planet, i.e. what a transit would give with no atmosphere at all.
 # Everything above it is atmosphere.
-# Band labels: drawn on the TOP-LEFT panel in black, slightly larger than the
-# surrounding tick text. raw_headroom_ppm lifts the raw row's y-maximum so they
-# clear the spectra and the epoch legend beneath them.
+# Band-label styling, retained for if the shading is ever restored. The extra
+# raw-row headroom existed only to clear those labels, so with the bands gone
+# it is back to zero rather than left as empty space above the spectra.
 band_label_size: 8.0
 band_label_color: black
-raw_headroom_ppm: 10.0
+raw_headroom_ppm: 0.0
 
 show_geometric: true
 # Label text removed 2026-09-04 (author request); the dotted line stays and the
@@ -143,26 +143,23 @@ geometric_label: null
 # the shading can sit very light without washing out the label, which at 6.5 pt
 # needs to stay legible. Lightened 2026-09-03: the previous saturated fills read
 # as too dark and too bold over the spectra.
-bands:
-  - {label: "H$_2$O",   lo: 2.5, hi: 2.9, color: '#e4f0fa', label_color: '#3d7ab8', row: 0}
-  - {label: "CO$_2$",   lo: 4.0, hi: 4.8, color: '#ededed', label_color: '#6e6e6e', row: 0}
-  - {label: null,       lo: 5.5, hi: 7.0, color: '#e4f0fa', label_color: '#3d7ab8', row: 0}
-  - {label: "SO$_2$",   lo: 7.0, hi: 7.7, color: '#fdeedd', label_color: '#c0761f', row: 0}
-  - {label: null,       lo: 8.4, hi: 8.9, color: '#fdeedd', label_color: '#c0761f', row: 0}
+# Band shading REMOVED 2026-09-04 (author decision). The spans misattributed
+# the absorption: 2.5-2.9 um was labelled H2O, but it is CO2-dominated. Measured
+# from the archived spectra, that band carries ~21 ppm on the CO2-poor ben1
+# (N2 + 400 ppm CO2) and ~22 ppm on the pure-CO2 ben2, i.e. essentially
+# unchanged across a ~2500x change in CO2, which is a saturated CO2 band, not a
+# water feature; Hunga's 146 Tg of injected water adds only ~+3.8 ppm on top.
+# Labelling it H2O told the reader the wrong thing.
+#
+# The list is kept so the shading can be restored, but it is not drawn: the
+# code skips band drawing entirely when show_bands is false.
+show_bands: false
+bands: []
 
-# ---------------------------------------------------------------------------
-# BOTTOM ROW -- GCM burdens, the mechanism behind the row above.
-#
-# Three curves per panel on one shared log axis in Tg. They are the three
-# reservoirs the scheme moves mass between:
-#   SO2       injected sulfur still in the gas phase
-#   VOLCHZMD  sulfate aerosol produced
-#   Q         total atmospheric water
-#
-# Q is included because it is the limiting reactant in columns 1 and 2 and the
-# unlimited one in 3 and 4; without it the "balance" framing has no referent.
-# On the dry atmospheres Q starts at exactly zero, so the curve begins only
-# once the eruption delivers water -- that gap is the point, not a defect.
+# Retained for reference (the former definitions):
+# H2O-labelled 2.5-2.9 (CO2-dominated, see above), CO2 4.0-4.8,
+# unlabelled 5.5-7.0, SO2 7.0-7.7, unlabelled 8.4-8.9.
+
 burden_vars:
   - {var: SO2,      label: "SO$_2$ (gas)",      color: '#c8792a', ls: '-'}
   - {var: VOLCHZMD, label: "sulfate aerosol",   color: '#8b2f8b', ls: '-'}
