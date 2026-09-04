@@ -169,6 +169,15 @@ burden_vars:
   - {var: Q,        label: "H$_2$O (total)",    color: '#2f6f8b', ls: '--'}
 
 kg_to_tg: 1.0e-09
+# Burden-row legend, left-aligned per author request, and vertically centred.
+# Measured occupancy of the leftmost burden panel across all five figures: the
+# middle fifths are consistently the emptiest, the top carries the flat H2O
+# curve on moist cases (the Fig. A8 collision), and the bottom carries the SO2
+# and sulfate curves as they fall. The middle is the only band clear in every
+# case.
+burden_legend_loc: "center left"
+burden_legend_anchor: [0.01, 0.46]
+
 burden_ylabel: "burden [Tg]"
 burden_xlabel: "days since eruption"
 # Full integration, matching the epochs above. At 600 d the late decay that

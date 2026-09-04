@@ -179,7 +179,21 @@ def draw_bands(ax, label_them, y_base=0.972):
         if label_them and band.get('label'):
             # Two rows, so the adjacent 5.5-8.9 um spans do not collide.
             y = y_base - 0.062 * band.get('row', 0)
-            ax.text(0.5 * (band['lo'] + band['hi']), y, band['label'],
+            # Centre across this band and any UNLABELLED spans that follow it,
+            # which are its continuation: SO2 is two bands (7.0-7.7, 8.4-8.9)
+            # and centring on the first alone threw the label to the left.
+            # Grouping by colour instead would be wrong, since H2O shares its
+            # blue with the unrelated 5.5-7.0 span.
+            _members = [band]
+            _bands = cfg['bands']
+            for _b in _bands[_bands.index(band) + 1:]:
+                if _b.get('label'):
+                    break
+                if _b['color'] == band['color']:
+                    _members.append(_b)
+            _xc = 0.5 * (min(b['lo'] for b in _members)
+                         + max(b['hi'] for b in _members))
+            ax.text(_xc, y, band['label'],
                     transform=ax.get_xaxis_transform(), ha='center', va='top',
                     fontsize=cfg.get('band_label_size', 8.0),
                     color=cfg.get('band_label_color', 'black'), zorder=5,
@@ -360,7 +374,15 @@ for i, col in enumerate(COLS):
             ha='left', va='bottom', fontsize=7.5, style='italic', color='0.25')
     if i == 0:
         ax.set_ylabel(cfg['burden_ylabel'])
-        ax.legend(loc='upper right', frameon=False, handlelength=1.6)
+        # Left-aligned per author request. Placed below the water line
+        # rather than at the top: on the hunga_wet variant (Fig. A8) the
+        # H2O burden runs flat at ~1e6-1e7 across the whole panel and an
+        # upper legend collides with it, while the panel below ~1e4 is
+        # empty in every case here.
+        ax.legend(loc=cfg.get('burden_legend_loc', 'lower left'),
+                  frameon=False, handlelength=1.6,
+                  bbox_to_anchor=tuple(cfg['burden_legend_anchor'])
+                  if cfg.get('burden_legend_anchor') else None)
     else:
         ax.set_yticklabels([])
 
