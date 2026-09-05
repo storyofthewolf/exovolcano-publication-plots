@@ -1,0 +1,120 @@
+# Config for figures A and B rebuilt on the AMPLITUDE metric.
+#
+# Supersedes config_trappist_spectral_summary.yaml for A and B. That file's
+# metric -- max |depth(lam,t) - depth(lam,0)| -- is misleading wherever
+# aerosol is present: sulfate raises the continuum bodily, so a band's every
+# point moves up and the difference returns a large number exactly when the
+# aerosol is flattening the band away. See exovolcano-spectra's
+# scripts/amplitude_table_24.py header, and Fauchez et al. (2019),
+# arXiv:1911.08596, Fig. 9, for the continuum-absorber behaviour.
+#
+# WHAT IS PLOTTED HERE. Feature amplitude -- peak-to-trough transit depth
+# within a band -- as a RATIO to the same band's pre-eruption amplitude:
+#
+#     ratio = amp(t) / amp(0)
+#
+# ratio < 1 = the eruption MUTED the feature (harder to detect)
+# ratio > 1 = the eruption DEEPENED it (easier to detect)
+#
+# A ratio is multiplicative about 1, not additive about 0. Both figures
+# therefore work in log space: figure A on a log y-axis, figure B on a
+# diverging colour scale centred on 1 with log-symmetric limits. Plotting a
+# ratio on a linear scale would compress every suppression into the 0-1
+# interval while giving enhancement the whole rest of the axis, which
+# misrepresents a factor of 2 down as smaller than a factor of 2 up.
+
+table_csv: /Users/wolfe/Desktop/projects/volcanos/exovolcano-spectra/data/amplitude_table_24.csv
+
+atmospheres: [ben1, ben2, hab1, hab2]
+
+atm_colors:
+  ben1: '#c0392b'
+  ben2: '#e08e0b'
+  hab1: '#2e86c1'
+  hab2: '#16a085'
+
+atm_labels:
+  ben1: "ben1: dry land, N$_2$"
+  ben2: "ben2: dry land, CO$_2$"
+  hab1: "hab1: aquaplanet, N$_2$"
+  hab2: "hab2: aquaplanet, CO$_2$"
+
+atm_markers: {ben1: 'o', ben2: 's', hab1: '^', hab2: 'D'}
+
+rungs: [1, 10, 100]
+rung_labels: ["1$\\times$", "10$\\times$", "100$\\times$"]
+
+# ---------------------------------------------------------------------------
+# FIGURE A -- ladder, on the amplitude metric
+#
+# Rows are the two H2O features that mute most plus the SO2 feature that
+# grows, which is the contrast the figure exists to show: on the same
+# eruption, water features are being erased while the sulfur feature is being
+# created. `series` selects which extreme of the ratio each row plots.
+#
+#   minratio -- the most muted epoch. The right question for a band that
+#               EXISTED before the eruption and is being veiled.
+#   maxratio -- the most enhanced epoch. The right question for a band the
+#               eruption ADDS absorber to.
+#
+# SO2 is plotted as maxratio because sulfur dioxide is injected, so its band
+# deepens; H2O as minratio because water is ambient and the aerosol veils it.
+# Plotting either band on the wrong extreme would report "no effect".
+ladder_rows:
+  - {band: "H2O 1.4",       series: minratio,
+     label: "H$_2$O 1.4 $\\mu$m\nmost-muted amplitude"}
+  - {band: "H2O nu2 ~6.3",  series: minratio,
+     label: "H$_2$O $\\nu_2$ 6.3 $\\mu$m\nmost-muted amplitude"}
+  - {band: "SO2 nu3 ~7.3",  series: maxratio,
+     label: "SO$_2$ $\\nu_3$ 7.3 $\\mu$m\npeak amplitude"}
+
+ladder_cols:
+  - {ladder: tambora, label: "Tambora-like (sulfur-rich): SO$_2$ scaled"}
+  - {ladder: hunga,   label: "Hunga-like (water-rich): H$_2$O scaled"}
+
+ladder_figsize: [9.0, 8.8]
+# Log y: the range spans 0.03 (nearly erased) to 17.6 (an order of magnitude
+# deeper), which no linear axis shows honestly.
+ladder_logy: true
+ladder_ylim: [0.025, 25.0]
+
+# ---------------------------------------------------------------------------
+# FIGURE B -- heatmap, on the amplitude metric
+#
+# Every band shown at its most-muted epoch, so the whole map answers one
+# question: how much of each feature survives the eruption at its worst?
+# SO2's enhancement is the subject of figure A and is deliberately not mixed
+# into this map, which would otherwise be answering two questions at once
+# with one colour scale.
+heatmap_series: minratio
+heatmap_bands:
+  - {band: "H2O 1.4",       label: "H$_2$O 1.4"}
+  - {band: "H2O 1.9",       label: "H$_2$O 1.9"}
+  - {band: "H2O 2.7",       label: "H$_2$O 2.7"}
+  - {band: "H2O nu2 ~6.3",  label: "H$_2$O $\\nu_2$ 6.3"}
+  - {band: "SO2 nu3 ~7.3",  label: "SO$_2$ $\\nu_3$ 7.3"}
+  - {band: "SO2 nu1 ~8.7",  label: "SO$_2$ $\\nu_1$ 8.7"}
+
+heatmap_group_by: atmosphere
+heatmap_figsize: [8.0, 9.4]
+# DIVERGING about 1.0, unlike the previous heatmap. The quantity now has a
+# meaningful neutral value -- ratio 1 is "the eruption changed nothing" -- so
+# a sequential map would hide where that crossing falls. Brown-blue-green
+# (BrBG) is colourblind-safe and carries no red-is-bad connotation, which
+# matters because a muted feature is a physical result, not an error.
+heatmap_cmap: BrBG
+# Log-symmetric about 1. Kept modest at 1/8..8 because this map plots the
+# MINIMUM ratio, which is <= 1 by construction, so the enhancement half exists
+# only to place the neutral colour honestly at 1 -- it is not where the data
+# lives. A wider 1/32..32 was tried first and pushed the whole table into two
+# pale steps at the middle of the ramp; 1/8 puts hab1/hab2's 0.03-0.09
+# saturated at the dark end where the muting is the story.
+heatmap_log_halfrange: 8.0
+heatmap_annotate: true
+# Cells whose pre-eruption amplitude is below the floor carry no meaningful
+# ratio -- ben1's flat SO2/H2O nu2 bands -- and are drawn as an explicit
+# hatched blank rather than left to read as a value.
+heatmap_undefined_color: '#dddddd'
+
+outfile_a: fig_amplitude_ladder
+outfile_b: fig_amplitude_heatmap
