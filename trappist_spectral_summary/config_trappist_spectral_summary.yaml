@@ -1,0 +1,142 @@
+# Config for the three candidate spectral-summary figures (A, B, C).
+#
+# THESE ARE EXPLORATORY. Three ways of drawing the same 24-case x 7-band
+# table, made so the author can compare them and pick one for the manuscript.
+# Whichever wins should get its own folder on the usual one-figure-per-folder
+# convention; this folder is a bake-off, not a manuscript source.
+#
+#   A  ladder   -- peak ppm vs magnitude rung, 3 bands x 2 eruptions,
+#                  one line per atmosphere. Shows the SCALING.
+#   B  heatmap  -- 24 cases x 7 bands, colour = ppm. Shows EVERYTHING at once.
+#   C  scatter  -- peak ppm vs day-of-peak. Shows the TIMING regimes.
+#
+# DATA SOURCE. band_table_24.csv, written by exovolcano-spectra's
+# scripts/band_table_24.py. Regenerate it there, not here:
+#     python scripts/band_table_24.py --csv data/band_table_24.csv
+#
+# WHAT THE NUMBERS ARE. Per case and band, the largest absolute departure of
+# the R=250-binned transit-depth spectrum from that case's OWN day-0
+# pre-eruption spectrum, over the sampled epochs, signed at the peak. Each
+# case is self-referenced, so these are eruption perturbations and NOT
+# comparisons of one atmosphere against another.
+#
+# THE SAMPLING CAVEAT, which every one of these figures inherits. Spectra
+# exist only at 11 prescribed epochs (0, 1, 5, 25, 50, 100, 300, 600, 1000,
+# 1500, 2000 d), so every "peak" is a peak OVER THOSE EPOCHS and is a lower
+# bound on the true maximum. Measured 2026-09-05 over the three key bands:
+# 48 of 72 case-band maxima are broad (a neighbouring epoch is within 85% of
+# the peak, so refinement would gain little), 8 are sharp (neighbour below
+# 60%, mostly hab2, whose signal genuinely rises and collapses within weeks),
+# and 13 of 168 band-peaks across all seven bands sit AT an endpoint of the
+# sampled set (day 5 or day 2000) where the true peak may lie outside it.
+# Any caption must say this.
+
+table_csv: /Users/wolfe/Desktop/projects/volcanos/exovolcano-spectra/data/band_table_24.csv
+
+atmospheres: [ben1, ben2, hab1, hab2]
+
+# Colour per atmosphere, shared across all three figures so they can be read
+# side by side. Dry pair warm, moist pair cool -- the surface-water boundary
+# is the single most important split in this suite, so it gets the hue
+# difference rather than a lightness difference.
+atm_colors:
+  ben1: '#c0392b'
+  ben2: '#e08e0b'
+  hab1: '#2e86c1'
+  hab2: '#16a085'
+
+atm_labels:
+  ben1: "ben1: dry land, N$_2$"
+  ben2: "ben2: dry land, CO$_2$"
+  hab1: "hab1: aquaplanet, N$_2$"
+  hab2: "hab2: aquaplanet, CO$_2$"
+
+# Marker per atmosphere, so figure C stays readable in greyscale and for
+# colour-vision-deficient readers.
+atm_markers:
+  ben1: 'o'
+  ben2: 's'
+  hab1: '^'
+  hab2: 'D'
+
+rungs: [1, 10, 100]
+rung_labels: ["1$\\times$", "10$\\times$", "100$\\times$"]
+
+# ---------------------------------------------------------------------------
+# FIGURE A -- the ladder plot
+#
+# Three rows, one per physical quantity, and two columns, one per eruption
+# ladder. The three bands chosen are the ones that carry the argument: the
+# strongest H2O feature, the strongest SO2 feature, and the aerosol proxy.
+#
+# THE TWO LADDERS SCALE DIFFERENT THINGS. Tambora scales SO2 at fixed H2O;
+# Hunga scales H2O at fixed SO2 (~1 Tg). A "hunga_100x" carries the SAME
+# sulfur as a "hunga". The columns are therefore NOT rung-for-rung
+# comparable, and the row that matters differs between them -- which is
+# itself the point the figure makes.
+ladder_rows:
+  - {band: "H2O nu2 ~6.3",  label: "H$_2$O $\\nu_2$ ($\\sim$6.3 $\\mu$m)"}
+  - {band: "SO2 nu3 ~7.3",  label: "SO$_2$ $\\nu_3$ ($\\sim$7.3 $\\mu$m)"}
+  - {band: "aerosol ~1.0",  label: "aerosol continuum (1 $\\mu$m)"}
+
+ladder_cols:
+  - {ladder: tambora, label: "Tambora-like (sulfur-rich): SO$_2$ scaled"}
+  - {ladder: hunga,   label: "Hunga-like (water-rich): H$_2$O scaled"}
+
+ladder_figsize: [9.0, 8.6]
+# Shared y within a ROW so the four atmospheres are comparable at a glance,
+# but NOT across rows: the aerosol continuum and the SO2 band differ by an
+# order of magnitude on the dry cases and a common scale would flatten both.
+ladder_share_y_across_cols: true
+
+# ---------------------------------------------------------------------------
+# FIGURE B -- the heatmap
+#
+# All 24 cases x 7 bands. See the colourmap note below for why this is
+# sequential-from-zero with negatives flagged separately, rather than the
+# diverging map it started as.
+heatmap_bands:
+  - {band: "H2O 1.4",       label: "H$_2$O 1.4"}
+  - {band: "H2O 1.9",       label: "H$_2$O 1.9"}
+  - {band: "H2O 2.7",       label: "H$_2$O 2.7"}
+  - {band: "H2O nu2 ~6.3",  label: "H$_2$O $\\nu_2$ 6.3"}
+  - {band: "SO2 nu3 ~7.3",  label: "SO$_2$ $\\nu_3$ 7.3"}
+  - {band: "SO2 nu1 ~8.7",  label: "SO$_2$ $\\nu_1$ 8.7"}
+  - {band: "aerosol ~1.0",  label: "aerosol 1.0"}
+
+heatmap_figsize: [8.2, 9.4]
+# SEQUENTIAL from zero, not diverging. The measured range is -2.3 to +99.9 ppm
+# with only 11 of 168 entries negative and none beyond -2.3, so a symmetric
+# +/-100 diverging scale spent half its dynamic range representing 2 ppm and
+# washed the real structure into the pale middle of the map. The sign flip is
+# still worth seeing, so negative cells are drawn in a distinct colour
+# (heatmap_negative_color) and their annotation is parenthesised, rather than
+# being carried by the colourmap at the cost of every other cell's contrast.
+heatmap_cmap: YlOrRd
+heatmap_vlim: 100.0
+heatmap_negative_color: '#6BAED6'
+heatmap_annotate: true
+
+# ---------------------------------------------------------------------------
+# FIGURE C -- peak value against time of peak
+#
+# The only one of the three that shows WHEN each signal peaks, which is a real
+# result the table hides: ben1's SO2 peaks at day 600-2000 as gas accumulates
+# for years, while hab2's peaks at day 5-25 and then rains out.
+#
+# x is log-scaled in days. Points at day 5 and day 2000 sit at the endpoints
+# of the sampled epoch set and are drawn hollow, since their true peak may lie
+# outside the sampled range -- see the sampling caveat at the head of this file.
+scatter_bands:
+  - {band: "H2O nu2 ~6.3",  label: "H$_2$O $\\nu_2$ 6.3 $\\mu$m"}
+  - {band: "SO2 nu3 ~7.3",  label: "SO$_2$ $\\nu_3$ 7.3 $\\mu$m"}
+  - {band: "aerosol ~1.0",  label: "aerosol 1 $\\mu$m"}
+
+scatter_figsize: [10.6, 4.2]
+scatter_endpoint_days: [5, 2000]
+# Marker area scales with rung so the ladder is legible without a third axis.
+scatter_size_by_rung: {1: 26, 10: 62, 100: 130}
+
+outfile_a: fig_spectral_ladder
+outfile_b: fig_spectral_heatmap
+outfile_c: fig_spectral_timing
