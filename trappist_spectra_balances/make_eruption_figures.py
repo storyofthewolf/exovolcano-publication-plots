@@ -31,8 +31,9 @@ comparable rung-for-rung and should not be read as if they were.
     python make_eruption_figures.py --list     # show what would be made
     python make_eruption_figures.py --only tambora_10x
 
-DATA AVAILABILITY: the 10x rungs have no computed spectra. See the module
-constant SPECTRA_MISSING below and the note this script prints.
+All six render as of 2026-09-05. The 10x rungs were the last gap: their
+spectra were computed after staging the h1 extracts from Discover. See
+SPECTRA_MISSING below for how a future gap is reported.
 """
 
 from __future__ import annotations
@@ -81,13 +82,14 @@ ERUPTIONS = [
     ("tambora_100x", "Tambora-like (sulfur-rich)", r"100$\times$"),
 ]
 
-#: Rungs with NO computed transmission spectra on disk (2026-09-04). The
-#: exovolcano-spectra sweep (scripts/run_all_suites.sh) covers only the 1x and
-#: 100x rungs of each ladder -- 16 cases -- and the 10x raw h1 extracts are not
-#: under data/raw/ either, so this is not a rerun-the-sweep away: the epochs
-#: must first be pulled from Discover. The burden row draws from
-#: remote_analysis and IS complete for all 24 cases.
-SPECTRA_MISSING = {"hunga_10x", "tambora_10x"}
+#: Rungs with NO computed transmission spectra on disk. Empty since
+#: 2026-09-05: the 10x rung was staged (extract_10x_remote.sh) and run through
+#: PICASO (run_10x_suite.sh) in exovolcano-spectra, so all 24 cases now have
+#: both spectra and burdens. Kept as a mechanism rather than deleted -- a new
+#: rung or atmosphere added to the matrices below will not have spectra until
+#: that sweep is extended, and naming it here gives a readable skip instead of
+#: the template's exit on the first missing .npz.
+SPECTRA_MISSING = set()
 
 
 def make_columns(case, rung):
