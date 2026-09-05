@@ -257,9 +257,15 @@ for i, col in enumerate(COLS):
         raw_lo = min(raw_lo, geo)
 
     style_spectral_axis(ax)
-    ax.set_title(f"{col['balance']}\n"
-                 + r"$\mathrm{\mathsf{" + col['case'].replace('_', r'\_') + r"}}$"
-                 + f"  ({col['atm']})",
+    # Default title names the case in monospace with the atmosphere in
+    # parentheses, which is right when the CASE is what varies across the row.
+    # The per-eruption figures invert that -- one eruption, four atmospheres --
+    # so a column may set `title` to override it outright rather than repeat
+    # the same case name four times across the top of the figure.
+    ax.set_title(col.get('title') or
+                 (f"{col['balance']}\n"
+                  + r"$\mathrm{\mathsf{" + col['case'].replace('_', r'\_') + r"}}$"
+                  + f"  ({col['atm']})"),
                  fontsize=8.5, pad=6)
     if i == 0:
         ax.set_ylabel(cfg['raw_ylabel'])
@@ -397,6 +403,15 @@ for i, col in enumerate(COLS):
 # distinct row spacings set on the gridspecs above. Margins are set explicitly
 # instead, and bbox_inches='tight' at save time trims whatever is left over.
 fig.subplots_adjust(left=0.055, right=0.995, top=0.945, bottom=0.075)
+
+# Optional figure-wide title. Unset for the manuscript figure, whose four
+# columns are four different cases with nothing to name in common; the
+# per-eruption figures hold one eruption fixed across four atmospheres and use
+# it to name that eruption once instead of in every column title. The top
+# margin drops to make room, so an unset suptitle leaves the layout untouched.
+if cfg.get('suptitle'):
+    fig.subplots_adjust(top=0.915)
+    fig.suptitle(cfg['suptitle'], fontsize=10.5, y=0.982)
 stem = os.path.join(here, cfg['outfile_stem'])
 for ext in ('pdf', 'eps'):
     fig.savefig(f'{stem}.{ext}', bbox_inches='tight')
