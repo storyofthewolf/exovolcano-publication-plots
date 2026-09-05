@@ -147,14 +147,29 @@ def figure_a():
 def figure_b():
     print('B: heatmap (24 cases x 7 bands)')
     bands = cfg['heatmap_bands']
-    # Row order: both ladders ascending, atmospheres within each rung. This
-    # groups the four atmospheres that share an eruption adjacently, which is
-    # the comparison the figure is for.
-    order = []
-    for ladder in ('tambora', 'hunga'):
-        for rung in RUNGS:
-            for atm in ATMS:
-                order.append((case_name(ladder, rung), atm))
+    # Row grouping. "atmosphere" blocks the four atmospheres, each holding its
+    # six eruptions -- so a block is one planet and reading DOWN it is that
+    # planet's full response to every eruption, which is how the suite is
+    # actually argued. "eruption" was the original, blocking by eruption and
+    # rung with the four atmospheres inside; it answers the transposed
+    # question (how do the planets differ at fixed forcing) and is kept
+    # because that is the comparison the per-eruption figures make.
+    grouping = cfg.get('heatmap_group_by', 'atmosphere')
+    order, block_edges, block_labels = [], [], []
+    if grouping == 'atmosphere':
+        for atm in ATMS:
+            block_labels.append((len(order), ALAB[atm]))
+            for ladder in ('tambora', 'hunga'):
+                for rung in RUNGS:
+                    order.append((case_name(ladder, rung), atm))
+            block_edges.append(len(order))
+    else:
+        for ladder in ('tambora', 'hunga'):
+            for rung in RUNGS:
+                block_labels.append((len(order), case_name(ladder, rung)))
+                for atm in ATMS:
+                    order.append((case_name(ladder, rung), atm))
+                block_edges.append(len(order))
 
     M = np.full((len(order), len(bands)), np.nan)
     for i, (case, atm) in enumerate(order):
@@ -184,16 +199,34 @@ def figure_b():
     ax.set_xticks(range(len(bands)))
     ax.set_xticklabels([b['label'] for b in bands], rotation=35, ha='right')
     ax.set_yticks(range(len(order)))
-    ax.set_yticklabels([f"{c}  {a}" for c, a in order], fontsize=7)
+    # Within an atmosphere block the atmosphere is constant, so repeating it on
+    # every row is noise -- the block label at the left carries it instead.
+    if grouping == 'atmosphere':
+        ax.set_yticklabels([c for c, _ in order], fontsize=7)
+    else:
+        ax.set_yticklabels([f"{c}  {a}" for c, a in order], fontsize=7)
 
     if cfg.get('heatmap_annotate'):
         for i in range(M.shape[0]):
             for j in range(M.shape[1]):
                 if np.isnan(M[i, j]):
                     continue
-                # White text on saturated cells, black on pale ones, so every
-                # number stays legible against its own background.
-                shade = 'white' if M[i, j] > 0.55 * v else 'black'
+                # Text colour follows the CELL'S OWN luminance rather than a
+                # fixed value threshold. A threshold only works for a colormap
+                # that darkens monotonically with value; on viridis, which is
+                # darkest at ZERO, it put black text on the darkest cells in
+                # the map. Relative luminance (Rec. 709) asks the question
+                # that actually matters -- is this background dark? -- and is
+                # correct for any colormap.
+                if M[i, j] < 0 and negc:
+                    # Negative cells are overpainted in a flat colour, so ask
+                    # that colour, not the colormap it never receives.
+                    r, g, b_ = matplotlib.colors.to_rgb(negc)
+                else:
+                    r, g, b_, _ = im.cmap(im.norm(M[i, j]))
+                shade = ('white'
+                         if (0.2126 * r + 0.7152 * g + 0.0722 * b_) < 0.55
+                         else 'black')
                 # Parenthesised, the accounting convention for a negative, so
                 # the sign survives even in a greyscale print where the
                 # negative-cell colour is just another grey.
@@ -202,11 +235,20 @@ def figure_b():
                 ax.text(j, i, txt, ha='center', va='center',
                         fontsize=6.2, color=shade, zorder=3)
 
-    # Rule off each block of four atmospheres, and more heavily between the
-    # two ladders, so the eye does not read across a boundary.
-    for k in range(4, len(order), 4):
-        ax.axhline(k - 0.5, color='0.35', lw=0.7)
-    ax.axhline(len(order) / 2 - 0.5, color='black', lw=1.6)
+    # Rule between blocks so the eye does not read across a boundary. Under
+    # atmosphere grouping the heavy rules separate the four planets and a
+    # lighter rule marks the Tambora|Hunga seam inside each, since the two
+    # ladders scale different quantities and are not rung-for-rung comparable.
+    for k in block_edges[:-1]:
+        ax.axhline(k - 0.5, color='black', lw=1.6)
+    if grouping == 'atmosphere':
+        for start, _ in block_labels:
+            ax.axhline(start + len(RUNGS) - 0.5, color='0.45', lw=0.7)
+        # Name each block once, outside the axes on the left.
+        for start, label in block_labels:
+            ax.text(-0.145, start + (2 * len(RUNGS) - 1) / 2.0, label,
+                    transform=ax.get_yaxis_transform(),
+                    rotation=90, ha='center', va='center', fontsize=8)
 
     cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046)
     cb.set_label('peak $\\Delta$ transit depth from day 0 [ppm]')

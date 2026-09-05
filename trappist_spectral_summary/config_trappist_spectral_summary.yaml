@@ -104,7 +104,12 @@ heatmap_bands:
   - {band: "SO2 nu1 ~8.7",  label: "SO$_2$ $\\nu_1$ 8.7"}
   - {band: "aerosol ~1.0",  label: "aerosol 1.0"}
 
-heatmap_figsize: [8.2, 9.4]
+# Row grouping: "atmosphere" blocks the four planets, each holding its six
+# eruptions (author request 2026-09-05); "eruption" blocks by eruption+rung
+# with the four atmospheres inside, which was the original.
+heatmap_group_by: atmosphere
+
+heatmap_figsize: [8.6, 9.4]
 # SEQUENTIAL from zero, not diverging. The measured range is -2.3 to +99.9 ppm
 # with only 11 of 168 entries negative and none beyond -2.3, so a symmetric
 # +/-100 diverging scale spent half its dynamic range representing 2 ppm and
@@ -112,7 +117,15 @@ heatmap_figsize: [8.2, 9.4]
 # still worth seeing, so negative cells are drawn in a distinct colour
 # (heatmap_negative_color) and their annotation is parenthesised, rather than
 # being carried by the colourmap at the cost of every other cell's contrast.
-heatmap_cmap: YlOrRd
+#
+# magma_r chosen 2026-09-05 from a rendered comparison of YlOrRd, viridis,
+# magma_r, plasma_r, cividis_r and Reds: it runs pale cream -> magenta ->
+# near-black, so it reads light-to-saturated as the values climb and carries
+# more perceptual range in the crowded 0-30 ppm region than YlOrRd, where most
+# of the table sits. viridis was rejected despite being the safest default --
+# it is DARKEST at zero, which inverts the light-to-saturated reading asked
+# for here.
+heatmap_cmap: magma_r
 heatmap_vlim: 100.0
 heatmap_negative_color: '#6BAED6'
 heatmap_annotate: true
