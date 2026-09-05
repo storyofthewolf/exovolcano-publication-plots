@@ -177,8 +177,17 @@ def figure_b():
     # is that amplitude divided by the pre-eruption one. "ampmin"/"ampmax" are
     # written by amplitude_table_24.py alongside the ratios.
     value_mode = cfg.get('heatmap_value', 'ratio')
-    suffix = ({'minratio': 'ampmin', 'maxratio': 'ampmax'}[series]
-              if value_mode == 'ppm' else series)
+
+    # PER-BAND extreme. H2O is ambient and gets veiled, so its story is the
+    # minimum; SO2 is injected and grows from ~zero, so its story is the
+    # maximum and its minimum is merely the pre-eruption state. A single
+    # global choice is wrong for one family or the other -- see the config.
+    def col_for(b):
+        ser = b.get('series', series)
+        if value_mode == 'ppm':
+            return f"{b['band']} " + {'minratio': 'ampmin',
+                                      'maxratio': 'ampmax'}[ser]
+        return f"{b['band']} {ser}"
 
     M = np.full((len(order), len(bands)), np.nan)
     A0 = np.full((len(order), len(bands)), np.nan)
@@ -187,7 +196,7 @@ def figure_b():
         if s.empty:
             continue
         for j, b in enumerate(bands):
-            M[i, j] = s[f"{b['band']} {suffix}"].values[0]
+            M[i, j] = s[col_for(b)].values[0]
             A0[i, j] = s[f"{b['band']} amp0"].values[0]
 
     fig, ax = plt.subplots(figsize=cfg['heatmap_figsize'])
@@ -232,12 +241,17 @@ def figure_b():
         for j, b in enumerate(bands):
             col = A0[:, j]
             col = col[~np.isnan(col)]
+            # Name the extreme per column: with H2O showing its minimum and
+            # SO2 its maximum, an unlabelled map would silently mix the two.
+            tag = ('peak' if b.get('series', series) == 'maxratio'
+                   else 'most muted')
             if col.size and (col.max() - col.min()) > 1.0:
-                labs.append(f"{b['label']}\npre: {col.min():.0f}-{col.max():.0f}")
+                base = f"pre: {col.min():.0f}-{col.max():.0f}"
             elif col.size:
-                labs.append(f"{b['label']}\npre: {col.mean():.0f}")
+                base = f"pre: {col.mean():.0f}"
             else:
-                labs.append(b['label'])
+                base = ""
+            labs.append(f"{b['label']}\n{tag}\n{base}")
         ax.set_xticklabels(labs, rotation=35, ha='right', fontsize=7)
     else:
         ax.set_xticklabels([b['label'] for b in bands], rotation=35,
@@ -291,9 +305,9 @@ def figure_b():
     if value_mode == 'ppm':
         cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046)
         cb.set_label('feature amplitude [ppm, peak-to-trough]')
-        ax.set_title('Feature amplitude at its most-muted epoch\n'
-                     '(R = 250; peak-to-trough within band, ppm)',
-                     fontsize=9, pad=9)
+        ax.set_title('Feature amplitude, peak-to-trough within band [ppm]\n'
+                     'H$_2$O at its most-muted epoch; SO$_2$ at its peak '
+                     '(R = 250)', fontsize=9, pad=9)
     else:
         cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046, ticks=_t)
         cb.ax.set_yticklabels([('1' if abs(t - 1) < 1e-9 else

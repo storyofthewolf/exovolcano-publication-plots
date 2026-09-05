@@ -81,11 +81,22 @@ ladder_ylim: [0.025, 25.0]
 # ---------------------------------------------------------------------------
 # FIGURE B -- heatmap, on the amplitude metric
 #
-# Every band shown at its most-muted epoch, so the whole map answers one
-# question: how much of each feature survives the eruption at its worst?
-# SO2's enhancement is the subject of figure A and is deliberately not mixed
-# into this map, which would otherwise be answering two questions at once
-# with one colour scale.
+# PER-BAND EXTREME. Each band reports the extreme that is meaningful for it,
+# because the two families of band behave oppositely and a single global
+# choice is wrong for one of them:
+#
+#   H2O  -> minratio/ampmin. Water is AMBIENT. It has a real pre-eruption
+#           feature, and the eruption's aerosol veils it, so the question is
+#           how little survives.
+#   SO2  -> maxratio/ampmax. Sulfur dioxide is INJECTED. Its band starts at
+#           or near zero and grows, so the minimum is just the pre-eruption
+#           state and says nothing about the eruption at all.
+#
+# This was got wrong first time: the whole map used ampmin, which reported
+# ben1 tambora_100x's SO2 nu3 as 5.8 ppm -- its day-1 pre-eruption value --
+# when the band actually reaches 102.5 ppm at day 1000, the largest feature
+# in the entire suite. The figure showed the strongest signal in the study as
+# one of its weakest cells.
 # VALUE MODE. "ppm" plots the absolute feature amplitude in ppm; "ratio"
 # plots it relative to the same band's pre-eruption amplitude.
 #
@@ -99,14 +110,15 @@ ladder_ylim: [0.025, 25.0]
 # starting point.
 heatmap_value: ppm
 
+# Fallback for a band that does not name its own series.
 heatmap_series: minratio
 heatmap_bands:
-  - {band: "H2O 1.4",       label: "H$_2$O 1.4"}
-  - {band: "H2O 1.9",       label: "H$_2$O 1.9"}
-  - {band: "H2O 2.7",       label: "H$_2$O 2.7"}
-  - {band: "H2O nu2 ~6.3",  label: "H$_2$O $\\nu_2$ 6.3"}
-  - {band: "SO2 nu3 ~7.3",  label: "SO$_2$ $\\nu_3$ 7.3"}
-  - {band: "SO2 nu1 ~8.7",  label: "SO$_2$ $\\nu_1$ 8.7"}
+  - {band: "H2O 1.4",       label: "H$_2$O 1.4",        series: minratio}
+  - {band: "H2O 1.9",       label: "H$_2$O 1.9",        series: minratio}
+  - {band: "H2O 2.7",       label: "H$_2$O 2.7",        series: minratio}
+  - {band: "H2O nu2 ~6.3",  label: "H$_2$O $\\nu_2$ 6.3", series: minratio}
+  - {band: "SO2 nu3 ~7.3",  label: "SO$_2$ $\\nu_3$ 7.3", series: maxratio}
+  - {band: "SO2 nu1 ~8.7",  label: "SO$_2$ $\\nu_1$ 8.7", series: maxratio}
 
 heatmap_group_by: atmosphere
 heatmap_figsize: [8.0, 9.4]
@@ -120,12 +132,14 @@ heatmap_figsize: [8.0, 9.4]
 # that a suppressed feature is the "quiet" one.
 heatmap_cmap: BrBG
 heatmap_cmap_ppm: viridis
-# Linear 0-60 ppm covers the measured 0.83-58.5 range of the muted
-# amplitudes. Linear, not log: in ppm the question is "how many ppm of feature
-# survive", and a log scale would exaggerate the difference between 1 and 2 ppm
-# -- both undetectable -- while compressing the 20-to-50 range that decides
-# whether a feature is observable at all.
-heatmap_ppm_vmax: 60.0
+# Linear 0-105 ppm. The top is set by SO2 nu3 on ben1 tambora_100x, which
+# reaches 102.5 ppm -- the largest feature amplitude in the suite. An earlier
+# 0-60 cap predated the per-band series fix, when the SO2 columns were
+# wrongly showing their pre-eruption values and nothing exceeded 58.5.
+# Linear, not log: in ppm the question is "how many ppm of feature are
+# there", and a log scale would exaggerate 1 vs 2 ppm -- both undetectable --
+# while compressing the 20-to-100 range that decides observability.
+heatmap_ppm_vmax: 105.0
 # Log-symmetric about 1. Kept modest at 1/8..8 because this map plots the
 # MINIMUM ratio, which is <= 1 by construction, so the enhancement half exists
 # only to place the neutral colour honestly at 1 -- it is not where the data
