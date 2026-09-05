@@ -173,26 +173,48 @@ def figure_b():
                     order.append((case_name(ladder, rung), atm))
                 block_edges.append(len(order))
 
+    # In ppm mode the plotted column is the amplitude itself; in ratio mode it
+    # is that amplitude divided by the pre-eruption one. "ampmin"/"ampmax" are
+    # written by amplitude_table_24.py alongside the ratios.
+    value_mode = cfg.get('heatmap_value', 'ratio')
+    suffix = ({'minratio': 'ampmin', 'maxratio': 'ampmax'}[series]
+              if value_mode == 'ppm' else series)
+
     M = np.full((len(order), len(bands)), np.nan)
+    A0 = np.full((len(order), len(bands)), np.nan)
     for i, (case, atm) in enumerate(order):
         s = df[(df.case == case) & (df.atm == atm)]
         if s.empty:
             continue
         for j, b in enumerate(bands):
-            M[i, j] = s[f"{b['band']} {series}"].values[0]
+            M[i, j] = s[f"{b['band']} {suffix}"].values[0]
+            A0[i, j] = s[f"{b['band']} amp0"].values[0]
 
-    hr = cfg['heatmap_log_halfrange']
     fig, ax = plt.subplots(figsize=cfg['heatmap_figsize'])
-    # LogNorm centred on 1: a factor-of-N suppression and a factor-of-N
-    # enhancement then sit equally far either side of the neutral colour.
-    im = ax.imshow(M, cmap=cfg['heatmap_cmap'],
-                   norm=LogNorm(vmin=1.0 / hr, vmax=hr),
-                   aspect='auto', interpolation='nearest')
+    if value_mode == 'ppm':
+        # Sequential and linear. 0 ppm -- a feature erased outright -- is the
+        # meaningful floor, and there is no neutral midpoint to diverge about.
+        im = ax.imshow(M, cmap=cfg.get('heatmap_cmap_ppm', 'viridis'),
+                       vmin=0.0, vmax=cfg.get('heatmap_ppm_vmax', 60.0),
+                       aspect='auto', interpolation='nearest')
+    else:
+        hr = cfg['heatmap_log_halfrange']
+        # LogNorm centred on 1: a factor-of-N suppression and a factor-of-N
+        # enhancement sit equally far either side of the neutral colour.
+        im = ax.imshow(M, cmap=cfg['heatmap_cmap'],
+                       norm=LogNorm(vmin=1.0 / hr, vmax=hr),
+                       aspect='auto', interpolation='nearest')
 
     # Undefined cells (pre-eruption band below the amplitude floor) get an
     # explicit flat colour, so an absent ratio never reads as a small one.
+    #
+    # ONLY IN RATIO MODE. In ppm mode there is nothing undefined: ben1's flat
+    # 6.3 um band has a perfectly real amplitude of 0.02 ppm, and printing
+    # that number is the honest answer -- the band is not missing, it is
+    # empty. It is the RATIO that is undefined there, because dividing by a
+    # near-zero baseline says nothing about detectability.
     undef = cfg.get('heatmap_undefined_color')
-    if undef:
+    if undef and value_mode != 'ppm':
         for i, j in np.argwhere(np.isnan(M)):
             ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1,
                                        facecolor=undef, edgecolor='none',
@@ -201,7 +223,25 @@ def figure_b():
                     fontsize=5.8, color='0.45', style='italic', zorder=3)
 
     ax.set_xticks(range(len(bands)))
-    ax.set_xticklabels([b['label'] for b in bands], rotation=35, ha='right')
+    if value_mode == 'ppm':
+        # Absolute ppm is not comparable between columns without knowing what
+        # each band started at, so the pre-eruption amplitude is named in the
+        # label. It varies a little between atmospheres; the range is given
+        # where it does.
+        labs = []
+        for j, b in enumerate(bands):
+            col = A0[:, j]
+            col = col[~np.isnan(col)]
+            if col.size and (col.max() - col.min()) > 1.0:
+                labs.append(f"{b['label']}\npre: {col.min():.0f}-{col.max():.0f}")
+            elif col.size:
+                labs.append(f"{b['label']}\npre: {col.mean():.0f}")
+            else:
+                labs.append(b['label'])
+        ax.set_xticklabels(labs, rotation=35, ha='right', fontsize=7)
+    else:
+        ax.set_xticklabels([b['label'] for b in bands], rotation=35,
+                           ha='right')
     ax.set_yticks(range(len(order)))
     if cfg.get('heatmap_group_by', 'atmosphere') == 'atmosphere':
         ax.set_yticklabels([c for c, _ in order], fontsize=7)
@@ -220,7 +260,13 @@ def figure_b():
                 # Two decimals below 1 (0.05 and 0.09 are different stories),
                 # one above, where the interesting range is 1.5-20.
                 v = M[i, j]
-                txt = f"{v:.2f}" if v < 1 else f"{v:.1f}"
+                if value_mode == 'ppm':
+                    # One decimal below 10 ppm, none above: the distinction
+                    # between 0.8 and 1.2 ppm matters (both undetectable, but
+                    # differently so) while 47 vs 47.3 does not.
+                    txt = f"{v:.1f}" if v < 10 else f"{v:.0f}"
+                else:
+                    txt = f"{v:.2f}" if v < 1 else f"{v:.1f}"
                 ax.text(j, i, txt, ha='center', va='center',
                         fontsize=6.2, color=shade, zorder=3)
 
@@ -236,18 +282,27 @@ def figure_b():
 
     # Ticks derived from the configured half-range, so changing it in the
     # YAML cannot leave the labels describing a scale that is no longer drawn.
-    _t, _v = [1.0], 1.0
-    while _v * 2 <= hr + 1e-9:
-        _v *= 2
-        _t = [1.0 / _v] + _t + [_v]
-    cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046, ticks=_t)
-    cb.ax.set_yticklabels([('1' if abs(t - 1) < 1e-9 else
-                            (f'1/{int(round(1 / t))}' if t < 1
-                             else f'{int(round(t))}')) for t in _t])
-    cb.set_label('feature amplitude / pre-eruption amplitude')
-    ax.set_title('Feature amplitude at its most-muted epoch\n'
-                 '(R = 250; below 1 = suppressed by aerosol continuum)',
-                 fontsize=9, pad=9)
+    _t = []
+    if value_mode != 'ppm':
+        _t, _v = [1.0], 1.0
+        while _v * 2 <= hr + 1e-9:
+            _v *= 2
+            _t = [1.0 / _v] + _t + [_v]
+    if value_mode == 'ppm':
+        cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046)
+        cb.set_label('feature amplitude [ppm, peak-to-trough]')
+        ax.set_title('Feature amplitude at its most-muted epoch\n'
+                     '(R = 250; peak-to-trough within band, ppm)',
+                     fontsize=9, pad=9)
+    else:
+        cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046, ticks=_t)
+        cb.ax.set_yticklabels([('1' if abs(t - 1) < 1e-9 else
+                                (f'1/{int(round(1 / t))}' if t < 1
+                                 else f'{int(round(t))}')) for t in _t])
+        cb.set_label('feature amplitude / pre-eruption amplitude')
+        ax.set_title('Feature amplitude at its most-muted epoch\n'
+                     '(R = 250; below 1 = suppressed by aerosol continuum)',
+                     fontsize=9, pad=9)
     save(fig, cfg['outfile_b'])
 
 

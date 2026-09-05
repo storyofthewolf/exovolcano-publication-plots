@@ -86,6 +86,19 @@ ladder_ylim: [0.025, 25.0]
 # SO2's enhancement is the subject of figure A and is deliberately not mixed
 # into this map, which would otherwise be answering two questions at once
 # with one colour scale.
+# VALUE MODE. "ppm" plots the absolute feature amplitude in ppm; "ratio"
+# plots it relative to the same band's pre-eruption amplitude.
+#
+# ppm answers "how big is this feature, in the units an instrument measures?"
+# -- so a 0.8 ppm residue and a 58 ppm feature are visibly different sizes,
+# which the ratio hides by normalising each band to itself. The cost is that
+# bands are no longer directly comparable: H2O 2.7 starts at ~50 ppm and
+# H2O 1.4 at ~17-39, so a mid-tone cell means something different in each
+# column. The `amp0` row printed beneath each band label is there to make
+# that baseline explicit rather than leaving the reader to assume a common
+# starting point.
+heatmap_value: ppm
+
 heatmap_series: minratio
 heatmap_bands:
   - {band: "H2O 1.4",       label: "H$_2$O 1.4"}
@@ -97,12 +110,22 @@ heatmap_bands:
 
 heatmap_group_by: atmosphere
 heatmap_figsize: [8.0, 9.4]
-# DIVERGING about 1.0, unlike the previous heatmap. The quantity now has a
-# meaningful neutral value -- ratio 1 is "the eruption changed nothing" -- so
-# a sequential map would hide where that crossing falls. Brown-blue-green
-# (BrBG) is colourblind-safe and carries no red-is-bad connotation, which
-# matters because a muted feature is a physical result, not an error.
+# Colourmap depends on the value mode.
+#   ratio: diverging about 1, since 1 is a meaningful neutral ("the eruption
+#          changed nothing") and the map should show where that falls.
+#   ppm:   sequential, since 0 ppm -- a feature erased entirely -- is the
+#          meaningful floor and there is no neutral midpoint to diverge about.
+# Both are colourblind-safe. viridis is used dark-to-light here so that LARGE
+# amplitude reads bright and a muted band reads dark, matching the intuition
+# that a suppressed feature is the "quiet" one.
 heatmap_cmap: BrBG
+heatmap_cmap_ppm: viridis
+# Linear 0-60 ppm covers the measured 0.83-58.5 range of the muted
+# amplitudes. Linear, not log: in ppm the question is "how many ppm of feature
+# survive", and a log scale would exaggerate the difference between 1 and 2 ppm
+# -- both undetectable -- while compressing the 20-to-50 range that decides
+# whether a feature is observable at all.
+heatmap_ppm_vmax: 60.0
 # Log-symmetric about 1. Kept modest at 1/8..8 because this map plots the
 # MINIMUM ratio, which is <= 1 by construction, so the enhancement half exists
 # only to place the neutral colour honestly at 1 -- it is not where the data
