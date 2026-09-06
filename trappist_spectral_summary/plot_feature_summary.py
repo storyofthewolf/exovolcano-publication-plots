@@ -1,23 +1,31 @@
 """
-plot_feature_summary.py -- the spectral summary on the day-0-referenced metric.
+plot_feature_summary.py -- one heatmap: signed change in feature amplitude.
 
-Supersedes plot_amplitude_summary.py, whose windowed continuum fits were
-audited on 2026-09-06 and found wrong in six places
-(exovolcano-spectra/notes/BAND_WINDOW_AUDIT.md). Nothing is fitted here: each
-case's day-0 spectrum is the pre-eruption state of that same atmosphere and is
-identical across all six of its eruptions, so it IS the control, and
-differencing against it removes that atmosphere's own bands exactly. See the
-config header.
+Each cell is the change in a band's peak-to-trough transit depth, in ppm,
+against that case's own pre-eruption spectrum:
 
-TWO PANELS, because the two views answer different questions:
+    amp(t) = max - min of transit depth within the band at epoch t
+    value  = amp(t*) - amp(0)    at whichever t* gives the larger excursion
 
-  LEFT   signal     day-0-referenced change, ppm. What the eruption ADDED.
-  RIGHT  amplitude  peak-to-trough at the most muted epoch, as a fraction of
-                    pre-eruption. What the aerosol FLATTENED.
+Positive means the eruption DEEPENED the feature; negative that the sulfate
+aerosol's raised continuum FLATTENED it. Both are real outcomes, and the
+diverging scale keeps them visibly distinct kinds of event.
 
-CO2 4.3 is why both are needed. Saturated on every atmosphere, so the eruption
-cannot deepen it and its signal is ~0 -- yet its amplitude falls to 0.12 of
-pre-eruption on hab1 tambora_100x. Either panel alone calls that band inert.
+Why amplitude and not a difference spectrum: a raised continuum lifts every
+point in a band, so depth(t) - depth(0) returns its LARGEST values exactly
+where the aerosol is erasing the feature. Amplitude asks how far a band's core
+sits below its own wings, which is what detectability follows. This is the
+continuum-absorber behaviour in Fauchez et al. (2019), Fig. 9.
+
+Why ppm and not a ratio: a ratio normalises each band to itself, so losing
+half of a 4 ppm feature and half of a 45 ppm feature look identical. ppm is
+the unit an instrument measures.
+
+Bands and windows come from exovolcano-spectra's feature_table_clean.py, which
+measures species footprints from the spectra rather than assuming line
+positions. Five bands and not eight: gas overlap makes the rest
+unattributable, the same reason Fauchez et al. report a handful of named lines
+rather than every band.
 
     python plot_feature_summary.py
 """
@@ -31,15 +39,13 @@ import yaml
 import matplotlib
 matplotlib.use('Agg')
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
 
 plt.rcParams.update({
     'font.family': 'serif',
     'font.size': 8,
     'axes.labelsize': 9,
-    'xtick.labelsize': 8,
+    'xtick.labelsize': 8.5,
     'ytick.labelsize': 8,
-    'legend.fontsize': 7.5,
     'pdf.fonttype': 42,
     'ps.fonttype': 42,
 })
@@ -53,114 +59,83 @@ with open(os.path.join(here, args.config)) as f:
 
 df = pd.read_csv(cfg['table_csv'])
 ATMS = cfg['atmospheres']
-ALAB = cfg['atm_labels']
 RUNGS = cfg['rungs']
 BANDS = cfg['bands']
+VCOL = cfg['value_column']
 
 
 def case_name(ladder, rung):
     return ladder if rung == 1 else f"{ladder}_{rung}x"
 
 
-# Rows: blocked by atmosphere, each holding its six eruptions. Reading down a
-# block is one planet's full response; the Tambora|Hunga seam inside each block
-# is ruled lightly, since the two ladders scale different quantities.
+# Rows blocked by atmosphere, each holding its six eruptions, so reading down a
+# block is one planet's full response. The Tambora|Hunga seam inside each block
+# is ruled lightly: the two ladders scale different quantities and are not
+# comparable rung for rung.
 order, block_edges, block_starts = [], [], []
 for atm in ATMS:
-    block_starts.append((len(order), ALAB[atm]))
+    block_starts.append((len(order), cfg['atm_labels'][atm]))
     for ladder in ('tambora', 'hunga'):
         for rung in RUNGS:
             order.append((case_name(ladder, rung), atm))
     block_edges.append(len(order))
 
-nb = len(BANDS)
-SIG = np.full((len(order), nb), np.nan)
-AMP = np.full((len(order), nb), np.nan)
-CAU = np.zeros((len(order), nb), dtype=bool)
+M = np.full((len(order), len(BANDS)), np.nan)
 for i, (case, atm) in enumerate(order):
     s = df[(df.case == case) & (df.atm == atm)]
     if s.empty:
         continue
     for j, b in enumerate(BANDS):
-        SIG[i, j] = s[f"{b['band']} sig"].values[0]
-        AMP[i, j] = s[f"{b['band']} amp_ratio"].values[0]
-        CAU[i, j] = bool(s[f"{b['band']} caution"].values[0])
+        M[i, j] = s[f"{b['band']} {VCOL}"].values[0]
 
-fig, axes = plt.subplots(1, 2, figsize=cfg['figsize'], sharey=True)
+v = cfg['vlim']
+fig, ax = plt.subplots(figsize=cfg['figsize'])
+im = ax.imshow(M, cmap=cfg['cmap'], vmin=-v, vmax=v,
+               aspect='auto', interpolation='nearest')
 
-panels = [
-    (axes[0], SIG, cfg['signal_cmap'], 0.0, cfg['signal_vmax'],
-     cfg['signal_label'], 'signal'),
-    (axes[1], AMP, cfg['amplitude_cmap'], 0.0, 1.0,
-     cfg['amplitude_label'], 'amplitude'),
-]
-
-for ax, M, cmap, vmin, vmax, label, kind in panels:
-    im = ax.imshow(M, cmap=cmap, vmin=vmin, vmax=vmax,
-                   aspect='auto', interpolation='nearest')
-
-    # Hatch the cells where another absorber overlaps this band on this
-    # atmosphere. The value is still measured and still drawn; the hatch says
-    # only that it cannot be attributed to one species.
-    for i, j in np.argwhere(CAU):
-        ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1, fill=False,
-                                   hatch=cfg['caution_hatch'], lw=0.0,
-                                   edgecolor='0.25', alpha=0.55, zorder=4))
-
+if cfg.get('annotate', True):
     for i in range(M.shape[0]):
         for j in range(M.shape[1]):
             if np.isnan(M[i, j]):
                 continue
+            # Text colour from the cell's own luminance, so it stays legible
+            # at both saturated ends of a diverging map.
             r, g, b_, _ = im.cmap(im.norm(M[i, j]))
             shade = ('white' if (0.2126 * r + 0.7152 * g + 0.0722 * b_) < 0.5
                      else 'black')
-            if kind == 'signal':
-                v = M[i, j]
-                # Parenthesised negatives, the accounting convention, so the
-                # sign survives on a sequential colour scale.
-                txt = (f"({abs(v):.0f})" if v < -0.5
-                       else (f"{v:.0f}" if abs(v) >= 1 else f"{v:.1f}"))
-            else:
-                txt = f"{M[i, j]:.2f}"
-            ax.text(j, i, txt, ha='center', va='center', fontsize=6.4,
-                    color=shade, zorder=5)
+            val = M[i, j]
+            txt = f"{val:+.0f}" if abs(val) >= 1 else f"{val:+.1f}"
+            ax.text(j, i, txt, ha='center', va='center', fontsize=7,
+                    color=shade, zorder=3)
 
-    ax.set_xticks(range(nb))
-    ax.set_xticklabels([b['label'] for b in BANDS], rotation=35, ha='right')
-    for k in block_edges[:-1]:
-        ax.axhline(k - 0.5, color='black', lw=1.6)
-    for start, _ in block_starts:
-        ax.axhline(start + len(RUNGS) - 0.5, color='0.45', lw=0.7)
+ax.set_xticks(range(len(BANDS)))
+ax.set_xticklabels([b['label'] for b in BANDS])
+ax.set_yticks(range(len(order)))
+ax.set_yticklabels([c for c, _ in order], fontsize=7.5)
 
-    # Colorbar padded well clear of the rotated band labels; at the default
-    # pad it sat on top of them.
-    cb = fig.colorbar(im, ax=ax, pad=0.16, fraction=0.045,
-                      orientation='horizontal', location='bottom')
-    cb.set_label(label, fontsize=8)
-
-axes[0].set_yticks(range(len(order)))
-axes[0].set_yticklabels([c for c, _ in order], fontsize=7)
-# Atmosphere name down the left of each block. Pushed further out than the
-# case labels and given the short name only: the full "aquaplanet, CO2" gloss
-# collided with its neighbours at this row height.
+for k in block_edges[:-1]:
+    ax.axhline(k - 0.5, color='black', lw=1.6)
+for start, _ in block_starts:
+    ax.axhline(start + len(RUNGS) - 0.5, color='0.5', lw=0.6)
 for start, lab in block_starts:
-    axes[0].text(-0.245, start + (2 * len(RUNGS) - 1) / 2.0,
-                 lab.split(':')[0], transform=axes[0].get_yaxis_transform(),
-                 rotation=90, ha='center', va='center', fontsize=9,
-                 fontweight='semibold')
+    ax.text(-0.235, start + (2 * len(RUNGS) - 1) / 2.0, lab,
+            transform=ax.get_yaxis_transform(), rotation=90,
+            ha='center', va='center', fontsize=9.5, fontweight='semibold')
 
-axes[0].set_title('What the eruption ADDED\n'
-                  'day-0 referenced signal', fontsize=9, pad=8)
-axes[1].set_title('What the aerosol FLATTENED\n'
-                  'amplitude relative to pre-eruption', fontsize=9, pad=8)
+cb = fig.colorbar(im, ax=ax, pad=0.025, fraction=0.048)
+cb.set_label('change in feature amplitude [ppm]')
+# Name the two directions on the bar itself, so the sign convention does not
+# have to be carried in from the caption.
+cb.ax.text(0.5, 0.985, 'deepened', transform=cb.ax.transAxes, ha='center',
+           va='top', fontsize=7, rotation=90)
+cb.ax.text(0.5, 0.015, 'flattened', transform=cb.ax.transAxes, ha='center',
+           va='bottom', fontsize=7, rotation=90)
 
-fig.legend(handles=[Patch(facecolor='white', edgecolor='0.25',
-                          hatch=cfg['caution_hatch'],
-                          label='another absorber overlaps this band on this '
-                                'atmosphere')],
-           loc='lower center', frameon=False, bbox_to_anchor=(0.5, -0.06))
+ax.set_title('Change in spectral feature amplitude\n'
+             'peak-to-trough within band, vs pre-eruption (R = 250)',
+             fontsize=9.5, pad=10)
 
-fig.subplots_adjust(wspace=0.05, bottom=0.20, top=0.90, left=0.12)
+fig.subplots_adjust(left=0.16, right=0.99, top=0.93, bottom=0.05)
 stem = os.path.join(here, cfg['outfile'])
 for ext in ('pdf', 'eps'):
     fig.savefig(f'{stem}.{ext}', bbox_inches='tight')
