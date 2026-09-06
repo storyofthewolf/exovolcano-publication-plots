@@ -183,6 +183,9 @@ def figure_b():
     # maximum and its minimum is merely the pre-eruption state. A single
     # global choice is wrong for one family or the other -- see the config.
     def col_for(b):
+        if value_mode == 'dppm':
+            # Signed change: one column, no per-band extreme to choose.
+            return f"{b['band']} dppm"
         ser = b.get('series', series)
         if value_mode == 'ppm':
             return f"{b['band']} " + {'minratio': 'ampmin',
@@ -200,7 +203,14 @@ def figure_b():
             A0[i, j] = s[f"{b['band']} amp0"].values[0]
 
     fig, ax = plt.subplots(figsize=cfg['heatmap_figsize'])
-    if value_mode == 'ppm':
+    if value_mode == 'dppm':
+        # Diverging about zero, symmetric, so a loss and a gain of the same
+        # size read as the same distance from neutral.
+        vl = cfg.get('heatmap_dppm_vlim', 100.0)
+        im = ax.imshow(M, cmap=cfg.get('heatmap_cmap_dppm', 'PuOr_r'),
+                       vmin=-vl, vmax=vl,
+                       aspect='auto', interpolation='nearest')
+    elif value_mode == 'ppm':
         # Sequential and linear. 0 ppm -- a feature erased outright -- is the
         # meaningful floor, and there is no neutral midpoint to diverge about.
         im = ax.imshow(M, cmap=cfg.get('heatmap_cmap_ppm', 'viridis'),
@@ -223,7 +233,7 @@ def figure_b():
     # empty. It is the RATIO that is undefined there, because dividing by a
     # near-zero baseline says nothing about detectability.
     undef = cfg.get('heatmap_undefined_color')
-    if undef and value_mode != 'ppm':
+    if undef and value_mode not in ('ppm', 'dppm'):
         for i, j in np.argwhere(np.isnan(M)):
             ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1,
                                        facecolor=undef, edgecolor='none',
@@ -232,7 +242,22 @@ def figure_b():
                     fontsize=5.8, color='0.45', style='italic', zorder=3)
 
     ax.set_xticks(range(len(bands)))
-    if value_mode == 'ppm':
+    if value_mode == 'dppm':
+        # The pre-eruption amplitude is the thing the change is measured
+        # against, so it belongs on the label: -20 ppm off a 25 ppm feature is
+        # near-total erasure, off a 70 ppm one it is a dent.
+        labs = []
+        for j, b in enumerate(bands):
+            col = A0[:, j]
+            col = col[~np.isnan(col)]
+            if col.size and (col.max() - col.min()) > 1.0:
+                labs.append(f"{b['label']}\npre: {col.min():.0f}-{col.max():.0f}")
+            elif col.size:
+                labs.append(f"{b['label']}\npre: {col.mean():.0f}")
+            else:
+                labs.append(b['label'])
+        ax.set_xticklabels(labs, rotation=35, ha='right', fontsize=7)
+    elif value_mode == 'ppm':
         # Absolute ppm is not comparable between columns without knowing what
         # each band started at, so the pre-eruption amplitude is named in the
         # label. It varies a little between atmospheres; the range is given
@@ -274,7 +299,9 @@ def figure_b():
                 # Two decimals below 1 (0.05 and 0.09 are different stories),
                 # one above, where the interesting range is 1.5-20.
                 v = M[i, j]
-                if value_mode == 'ppm':
+                if value_mode == 'dppm':
+                    txt = f"{v:+.0f}" if abs(v) >= 1 else f"{v:+.1f}"
+                elif value_mode == 'ppm':
                     # One decimal below 10 ppm, none above: the distinction
                     # between 0.8 and 1.2 ppm matters (both undetectable, but
                     # differently so) while 47 vs 47.3 does not.
@@ -297,12 +324,19 @@ def figure_b():
     # Ticks derived from the configured half-range, so changing it in the
     # YAML cannot leave the labels describing a scale that is no longer drawn.
     _t = []
-    if value_mode != 'ppm':
+    if value_mode not in ('ppm', 'dppm'):
         _t, _v = [1.0], 1.0
         while _v * 2 <= hr + 1e-9:
             _v *= 2
             _t = [1.0 / _v] + _t + [_v]
-    if value_mode == 'ppm':
+    if value_mode == 'dppm':
+        cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046)
+        cb.set_label('change in feature amplitude [ppm]\n'
+                     'negative = muted by aerosol,  positive = enhanced')
+        ax.set_title('Change in spectral feature amplitude after eruption\n'
+                     '(R = 250; peak-to-trough within band, vs pre-eruption)',
+                     fontsize=9, pad=9)
+    elif value_mode == 'ppm':
         cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046)
         cb.set_label('feature amplitude [ppm, peak-to-trough]')
         ax.set_title('Feature amplitude, peak-to-trough within band [ppm]\n'
