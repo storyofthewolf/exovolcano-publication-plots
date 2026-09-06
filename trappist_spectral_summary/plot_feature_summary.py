@@ -62,6 +62,7 @@ ATMS = cfg['atmospheres']
 RUNGS = cfg['rungs']
 BANDS = cfg['bands']
 VCOL = cfg['value_column']
+SCOL = cfg.get('secondary_column')
 
 
 def case_name(ladder, rung):
@@ -81,12 +82,15 @@ for atm in ATMS:
     block_edges.append(len(order))
 
 M = np.full((len(order), len(BANDS)), np.nan)
+S = np.full((len(order), len(BANDS)), np.nan)
 for i, (case, atm) in enumerate(order):
     s = df[(df.case == case) & (df.atm == atm)]
     if s.empty:
         continue
     for j, b in enumerate(BANDS):
         M[i, j] = s[f"{b['band']} {VCOL}"].values[0]
+        if SCOL:
+            S[i, j] = s[f"{b['band']} {SCOL}"].values[0]
 
 v = cfg['vlim']
 fig, ax = plt.subplots(figsize=cfg['figsize'])
@@ -105,8 +109,23 @@ if cfg.get('annotate', True):
                      else 'black')
             val = M[i, j]
             txt = f"{val:+.0f}" if abs(val) >= 1 else f"{val:+.1f}"
-            ax.text(j, i, txt, ha='center', va='center', fontsize=7,
-                    color=shade, zorder=3)
+            if SCOL and not np.isnan(S[i, j]):
+                # Two numbers per cell: the amplitude change sets the colour,
+                # the difference-spectrum peak sits under it in parentheses so
+                # the figure can be reconciled against A5-A10 by eye.
+                sv = S[i, j]
+                stxt = f"({sv:+.0f})" if abs(sv) >= 1 else f"({sv:+.1f})"
+                ax.text(j, i - 0.16, txt, ha='center', va='center',
+                        fontsize=7, color=shade, zorder=3)
+                # No alpha: the PostScript backend drops transparency, so an
+                # alpha'd label renders full-strength in the EPS and faded in
+                # the PDF, and the manuscript would disagree with the
+                # reference figure built here.
+                ax.text(j, i + 0.20, stxt, ha='center', va='center',
+                        fontsize=5.8, color=shade, zorder=3)
+            else:
+                ax.text(j, i, txt, ha='center', va='center', fontsize=7,
+                        color=shade, zorder=3)
 
 ax.set_xticks(range(len(BANDS)))
 ax.set_xticklabels([b['label'] for b in BANDS])
@@ -131,9 +150,12 @@ cb.ax.text(0.5, 0.985, 'deepened', transform=cb.ax.transAxes, ha='center',
 cb.ax.text(0.5, 0.015, 'flattened', transform=cb.ax.transAxes, ha='center',
            va='bottom', fontsize=7, rotation=90)
 
-ax.set_title('Change in spectral feature amplitude\n'
-             'peak-to-trough within band, vs pre-eruption (R = 250)',
-             fontsize=9.5, pad=10)
+_sub = ('change in band amplitude, peak-to-trough'
+        if not SCOL else
+        'top: change in band amplitude   (bottom): '
+        + cfg.get('secondary_label', SCOL))
+ax.set_title('Spectral feature response to the eruption\n' + _sub
+             + '  [ppm, R = 250]', fontsize=9.5, pad=10)
 
 fig.subplots_adjust(left=0.16, right=0.99, top=0.93, bottom=0.05)
 stem = os.path.join(here, cfg['outfile'])

@@ -30,7 +30,28 @@
 # (2019) report a handful of named lines rather than every band.
 
 table_csv: /Users/wolfe/Desktop/projects/volcanos/exovolcano-spectra/data/feature_table_clean.csv
+
+# The cell COLOUR and its large number. amp_change is the change in
+# peak-to-trough band amplitude; sig is the peak of the difference spectrum.
 value_column: amp_change
+
+# Second number printed under the first, for reconciliation against the
+# manuscript's transmission figures (A5-A10). Those plot the DIFFERENCE
+# spectrum, so a reader measuring ben1 tambora_100x's SO2 band off Figure A10
+# by eye gets ~95 ppm, while this heatmap's amplitude change is +66. Both are
+# right and they measure different things:
+#
+#   band max rises 4661.45 -> 4759.37   (+97.9 ppm)
+#   band min rises 4655.74 -> 4689.08   (+33.3 ppm)
+#   amplitude    5.72 ->   70.28        (+64.6 ppm)
+#
+# The core rises ~98 ppm, the wings ~33, and amplitude is the ~65 ppm
+# separation between them. The difference metric counts the whole rise
+# including the pedestal the band sits on.
+#
+# Set to null to print the amplitude change alone.
+secondary_column: sig
+secondary_label: "difference-spectrum peak"
 
 atmospheres: [ben1, ben2, hab1, hab2]
 atm_labels: {ben1: ben1, ben2: ben2, hab1: hab1, hab2: hab2}
