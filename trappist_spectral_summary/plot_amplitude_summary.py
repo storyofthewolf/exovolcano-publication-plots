@@ -251,20 +251,14 @@ def figure_b():
 
     ax.set_xticks(range(len(bands)))
     if value_mode in ('dppm', 'ddepth'):
-        # The pre-eruption amplitude is the thing the change is measured
-        # against, so it belongs on the label: -20 ppm off a 25 ppm feature is
-        # near-total erasure, off a 70 ppm one it is a dent.
-        labs = []
-        for j, b in enumerate(bands):
-            col = A0[:, j]
-            col = col[~np.isnan(col)]
-            if col.size and (col.max() - col.min()) > 1.0:
-                labs.append(f"{b['label']}\npre: {col.min():.0f}-{col.max():.0f}")
-            elif col.size:
-                labs.append(f"{b['label']}\npre: {col.mean():.0f}")
-            else:
-                labs.append(b['label'])
-        ax.set_xticklabels(labs, rotation=35, ha='right', fontsize=7)
+        # Band label only. A "pre: lo-hi" annotation carrying each band's
+        # pre-eruption depth was tried and removed (author request): it never
+        # said what the numbers were, and on ben1's 6 um band, which does not
+        # exist before the eruption, its lower bound printed as a negative
+        # depth from the baseline fit through noise -- honest arithmetic,
+        # meaningless as a label. The pre-eruption depths live in the CSV.
+        ax.set_xticklabels([b['label'] for b in bands], rotation=35,
+                           ha='right')
     elif value_mode == 'ppm':
         # Absolute ppm is not comparable between columns without knowing what
         # each band started at, so the pre-eruption amplitude is named in the

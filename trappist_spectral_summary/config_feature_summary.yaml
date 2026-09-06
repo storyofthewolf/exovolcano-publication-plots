@@ -1,0 +1,81 @@
+# Config for the two-panel spectral feature summary.
+#
+# Supersedes config_amplitude_summary.yaml, whose windowed continuum fits were
+# audited on 2026-09-06 and found wrong in six places
+# (exovolcano-spectra/notes/BAND_WINDOW_AUDIT.md). Two changes came out of
+# that audit and both are reflected here.
+#
+# NO FITTED CONTINUUM. Each case's day-0 spectrum is the pre-eruption state of
+# that same atmosphere, and is identical across all six of its eruptions
+# (ben1 differs by at most 0.11 ppm, the other three by exactly 0). Day 0 is
+# therefore already the control: differencing against it removes the
+# atmosphere's own bands exactly, CO2 included, with no window to place. That
+# is what no window could achieve, since at 1 bar the measured CO2 footprint
+# covers nearly the whole 1-10.5 um range.
+#
+# FIVE BANDS, NOT EIGHT, with edges from measured species footprints rather
+# than assumed line centres. Gas overlap is why Fauchez et al. (2019) report a
+# handful of named lines rather than every band, and the same reduction
+# applies here.
+#
+# TWO PANELS, because the two views answer different questions and a band can
+# be flat in one while moving in the other:
+#
+#   LEFT   signal     day-0-referenced change in ppm. Catches a band the
+#                     eruption ADDS absorption to.
+#   RIGHT  amplitude  peak-to-trough at the most muted epoch, as a fraction
+#                     of pre-eruption. Catches a band the aerosol FLATTENS.
+#
+# CO2 4.3 is the case that requires both. It is saturated on every atmosphere,
+# so the eruption cannot deepen it and its signal is ~0 -- yet its amplitude
+# falls to 0.12 of pre-eruption on hab1 tambora_100x. A one-panel figure on
+# either metric alone would report that band as inert.
+
+table_csv: /Users/wolfe/Desktop/projects/volcanos/exovolcano-spectra/data/feature_table_clean.csv
+
+atmospheres: [ben1, ben2, hab1, hab2]
+atm_labels:
+  ben1: "ben1: dry land, N$_2$"
+  ben2: "ben2: dry land, CO$_2$"
+  hab1: "hab1: aquaplanet, N$_2$"
+  hab2: "hab2: aquaplanet, CO$_2$"
+
+rungs: [1, 10, 100]
+
+# Ordered sulfur, water, then the CO2 aerosol diagnostic, so the two SO2 bands
+# and the two H2O bands sit adjacent and can be read as pairs.
+bands:
+  - {band: "SO2 8.7",  label: "SO$_2$ 8.7"}
+  - {band: "SO2 7.3",  label: "SO$_2$ 7.3"}
+  - {band: "H2O 6.3",  label: "H$_2$O 6.3"}
+  - {band: "H2O 1.4",  label: "H$_2$O 1.4"}
+  - {band: "CO2 4.3",  label: "CO$_2$ 4.3"}
+
+figsize: [12.6, 9.2]
+
+# LEFT PANEL -- day-0-referenced signal.
+# Sequential from zero: the measured range is -2.2 to +99.9 ppm and only a
+# handful of entries are negative by more than 1 ppm, so a diverging scale
+# would spend half its range on nothing. Negatives are annotated in
+# parentheses rather than carried by colour.
+signal_cmap: YlOrBr
+signal_vmax: 100.0
+signal_label: "day-0 referenced signal [ppm]"
+
+# RIGHT PANEL -- amplitude at the most muted epoch.
+# 1.0 means the eruption left the feature's amplitude untouched, so the scale
+# runs 0 to 1 with the LOW end saturated: on this panel dark means erased.
+# Reversed relative to the left panel deliberately -- both panels then read
+# "dark = the eruption did something", which is the comparison the figure is
+# for.
+amplitude_cmap: viridis
+amplitude_label: "amplitude / pre-eruption (most muted epoch)"
+
+# Cells where another absorber overlaps the band on that atmosphere are hatched
+# rather than dropped: the number is still measured, but should not be read as
+# that species alone. 66 of the 120 cells carry the flag, almost all of them
+# the CO2-rich ben2 and hab2, which is itself the point -- on a 1 bar CO2
+# atmosphere almost nothing is spectrally clean.
+caution_hatch: "///"
+
+outfile: fig_feature_summary
