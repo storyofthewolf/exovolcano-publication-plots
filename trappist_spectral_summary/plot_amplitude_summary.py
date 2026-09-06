@@ -57,6 +57,9 @@ with open(os.path.join(here, args.config)) as f:
     cfg = yaml.safe_load(f)
 
 df = pd.read_csv(cfg['table_csv'])
+# Figure B may read a different table than A: the band-depth metric lives in
+# its own CSV, since it is a different measurement rather than a new column.
+df_b = (pd.read_csv(cfg['table_csv_b']) if cfg.get('table_csv_b') else df)
 ATMS = cfg['atmospheres']
 ACOL, ALAB, AMRK = cfg['atm_colors'], cfg['atm_labels'], cfg['atm_markers']
 RUNGS = cfg['rungs']
@@ -183,6 +186,8 @@ def figure_b():
     # maximum and its minimum is merely the pre-eruption state. A single
     # global choice is wrong for one family or the other -- see the config.
     def col_for(b):
+        if value_mode == 'ddepth':
+            return f"{b['band']} ddepth"
         if value_mode == 'dppm':
             # Signed change: one column, no per-band extreme to choose.
             return f"{b['band']} dppm"
@@ -192,21 +197,24 @@ def figure_b():
                                       'maxratio': 'ampmax'}[ser]
         return f"{b['band']} {ser}"
 
+    src = df_b if value_mode == 'ddepth' else df
+    base_key = 'depth0' if value_mode == 'ddepth' else 'amp0'
     M = np.full((len(order), len(bands)), np.nan)
     A0 = np.full((len(order), len(bands)), np.nan)
     for i, (case, atm) in enumerate(order):
-        s = df[(df.case == case) & (df.atm == atm)]
+        s = src[(src.case == case) & (src.atm == atm)]
         if s.empty:
             continue
         for j, b in enumerate(bands):
             M[i, j] = s[col_for(b)].values[0]
-            A0[i, j] = s[f"{b['band']} amp0"].values[0]
+            A0[i, j] = s[f"{b['band']} {base_key}"].values[0]
 
     fig, ax = plt.subplots(figsize=cfg['heatmap_figsize'])
-    if value_mode == 'dppm':
+    if value_mode in ('dppm', 'ddepth'):
         # Diverging about zero, symmetric, so a loss and a gain of the same
         # size read as the same distance from neutral.
-        vl = cfg.get('heatmap_dppm_vlim', 100.0)
+        vl = cfg.get('heatmap_ddepth_vlim' if value_mode == 'ddepth'
+                     else 'heatmap_dppm_vlim', 100.0)
         im = ax.imshow(M, cmap=cfg.get('heatmap_cmap_dppm', 'PuOr_r'),
                        vmin=-vl, vmax=vl,
                        aspect='auto', interpolation='nearest')
@@ -233,7 +241,7 @@ def figure_b():
     # empty. It is the RATIO that is undefined there, because dividing by a
     # near-zero baseline says nothing about detectability.
     undef = cfg.get('heatmap_undefined_color')
-    if undef and value_mode not in ('ppm', 'dppm'):
+    if undef and value_mode not in ('ppm', 'dppm', 'ddepth'):
         for i, j in np.argwhere(np.isnan(M)):
             ax.add_patch(plt.Rectangle((j - 0.5, i - 0.5), 1, 1,
                                        facecolor=undef, edgecolor='none',
@@ -242,7 +250,7 @@ def figure_b():
                     fontsize=5.8, color='0.45', style='italic', zorder=3)
 
     ax.set_xticks(range(len(bands)))
-    if value_mode == 'dppm':
+    if value_mode in ('dppm', 'ddepth'):
         # The pre-eruption amplitude is the thing the change is measured
         # against, so it belongs on the label: -20 ppm off a 25 ppm feature is
         # near-total erasure, off a 70 ppm one it is a dent.
@@ -299,7 +307,7 @@ def figure_b():
                 # Two decimals below 1 (0.05 and 0.09 are different stories),
                 # one above, where the interesting range is 1.5-20.
                 v = M[i, j]
-                if value_mode == 'dppm':
+                if value_mode in ('dppm', 'ddepth'):
                     txt = f"{v:+.0f}" if abs(v) >= 1 else f"{v:+.1f}"
                 elif value_mode == 'ppm':
                     # One decimal below 10 ppm, none above: the distinction
@@ -324,17 +332,17 @@ def figure_b():
     # Ticks derived from the configured half-range, so changing it in the
     # YAML cannot leave the labels describing a scale that is no longer drawn.
     _t = []
-    if value_mode not in ('ppm', 'dppm'):
+    if value_mode not in ('ppm', 'dppm', 'ddepth'):
         _t, _v = [1.0], 1.0
         while _v * 2 <= hr + 1e-9:
             _v *= 2
             _t = [1.0 / _v] + _t + [_v]
-    if value_mode == 'dppm':
+    if value_mode in ('dppm', 'ddepth'):
         cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046)
-        cb.set_label('change in feature amplitude [ppm]\n'
-                     'negative = muted by aerosol,  positive = enhanced')
-        ax.set_title('Change in spectral feature amplitude after eruption\n'
-                     '(R = 250; peak-to-trough within band, vs pre-eruption)',
+        cb.set_label('change in band depth [ppm]\n'
+                     'negative = muted by aerosol,  positive = deepened')
+        ax.set_title('Change in spectral band depth after eruption\n'
+                     '(R = 250; depth measured against local continuum)',
                      fontsize=9, pad=9)
     elif value_mode == 'ppm':
         cb = fig.colorbar(im, ax=ax, pad=0.02, fraction=0.046)

@@ -23,7 +23,10 @@
 # interval while giving enhancement the whole rest of the axis, which
 # misrepresents a factor of 2 down as smaller than a factor of 2 up.
 
+# Figure B reads the CONTINUUM-REFERENCED band-depth table; figure A still
+# reads the amplitude table. See heatmap_value below for why B moved.
 table_csv: /Users/wolfe/Desktop/projects/volcanos/exovolcano-spectra/data/amplitude_table_24.csv
+table_csv_b: /Users/wolfe/Desktop/projects/volcanos/exovolcano-spectra/data/band_depth_24.csv
 
 atmospheres: [ben1, ben2, hab1, hab2]
 
@@ -97,7 +100,22 @@ ladder_ylim: [0.025, 25.0]
 # a feature, which is precisely the confusion this metric exists to remove.
 # CO2 2.7 is also excluded -- it overlaps the H2O 2.7 feature and the two
 # cannot be attributed apart here.
-heatmap_value: dppm
+# ddepth: the signed change in CONTINUUM-REFERENCED band depth, from
+# band_depth_24.py. Replaces the earlier dppm, which was built on (max - min)
+# inside a single window and could not tell "the peak grew" from "the trough
+# filled in".
+#
+# The ben2 Hunga cases are why. There the injected water fills the trough
+# between the CO2 bands flanking 6 um: the band floor rises ~9 ppm while the
+# ceiling barely moves, so max - min SHRINKS and the old metric reported
+# -8.4 ppm -- a muted feature -- for a case whose difference spectrum shows
+# +23.8 ppm of ADDED absorption. Referencing each band to a baseline drawn
+# between its own flanking continuum windows, recomputed at every epoch,
+# removes the pedestal and measures only band structure. ben2 hunga now reads
+# +1.0/+2.1/+7.1 across the ladder, correctly positive and monotonic, while
+# ben1 is essentially unchanged (+26.6 against the old +26.2) -- the fix
+# changes the cases it should and leaves the rest alone.
+heatmap_value: ddepth
 heatmap_bands:
   - {band: "CO2 2.0",       label: "CO$_2$ 2.0"}
   - {band: "CO2 4.3",       label: "CO$_2$ 4.3"}
@@ -120,6 +138,8 @@ heatmap_cmap_dppm: PuOr_r
 # scale would make a 30 ppm loss and a 30 ppm gain look like different
 # magnitudes.
 heatmap_dppm_vlim: 100.0
+# Band depth spans -54.3 to +94.0 ppm; symmetric 100 still covers it.
+heatmap_ddepth_vlim: 100.0
 heatmap_annotate: true
 
 outfile_a: fig_amplitude_ladder
