@@ -29,11 +29,16 @@
 # overlap is why there are five and not eight, the same reason Fauchez et al.
 # (2019) report a handful of named lines rather than every band.
 
-table_csv: /Users/wolfe/Desktop/projects/volcanos/exovolcano-spectra/data/feature_table_clean.csv
+# FIXED-WAVELENGTH band depths. Supersedes feature_table_clean.csv, whose
+# amplitude was a max-minus-min over a window and therefore measured day 0 and
+# day 2000 between different pairs of wavelengths. Here the core and both
+# shoulders are constants, tabulated in band_depth_fixed.py, so a change in a
+# cell is a change in the spectrum and not a change in where the code looked.
+table_csv: /Users/wolfe/Desktop/projects/volcanos/exovolcano-spectra/data/band_depth_fixed.csv
 
 # The cell COLOUR and its large number. amp_change is the change in
 # peak-to-trough band amplitude; sig is the peak of the difference spectrum.
-value_column: amp_change
+value_column: dD
 
 # Second number printed under the first, for reconciliation against the
 # manuscript's transmission figures (A5-A10). Those plot the DIFFERENCE
@@ -50,7 +55,8 @@ value_column: amp_change
 # including the pedestal the band sits on.
 #
 # Set to null to print the amplitude change alone.
-secondary_column: sig
+secondary_column: null
+# secondary_label: unused while secondary_column is null.
 secondary_label: "difference-spectrum peak"
 
 atmospheres: [ben1, ben2, hab1, hab2]
@@ -58,8 +64,8 @@ atm_labels: {ben1: ben1, ben2: ben2, hab1: hab1, hab2: hab2}
 rungs: [1, 10, 100]
 
 bands:
-  - {band: "SO2 8.7",  label: "SO$_2$ 8.7"}
   - {band: "SO2 7.3",  label: "SO$_2$ 7.3"}
+  - {band: "SO2 8.7",  label: "SO$_2$ 8.7"}
   - {band: "H2O 6.3",  label: "H$_2$O 6.3"}
   - {band: "H2O 1.4",  label: "H$_2$O 1.4"}
   - {band: "CO2 4.3",  label: "CO$_2$ 4.3"}
@@ -70,6 +76,8 @@ figsize: [7.4, 9.0]
 # reading: muting and enhancement are both physical outcomes. Symmetric +/-70
 # covers the measured -37.8..+66.6 without letting one outlier set the scale.
 cmap: PuOr_r
-vlim: 70.0
+# Measured range -50.6 to +94.1 ppm.
+vlim: 95.0
+subtitle: "change in band depth at fixed wavelengths"
 annotate: true
 outfile: fig_feature_summary

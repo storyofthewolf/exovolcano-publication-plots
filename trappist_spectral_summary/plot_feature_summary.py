@@ -4,14 +4,21 @@ plot_feature_summary.py -- one heatmap: signed change in feature amplitude.
 Each cell is the change in a band's peak-to-trough transit depth, in ppm,
 against that case's own pre-eruption spectrum:
 
-    amp(t) = max - min of transit depth within the band at epoch t
-    value  = amp(t*) - amp(0)    at whichever t* gives the larger excursion
+    D(t)  = depth(lam_core, t) - baseline(lam_core, t)
+    value = D(t*) - D(0)         at whichever t* gives the larger excursion
+
+where the baseline is the straight line joining two FIXED shoulder
+wavelengths, and lam_core, lam_blue and lam_red are constants tabulated in
+exovolcano-spectra/scripts/band_depth_fixed.py. Every earlier version of this
+figure located its own extrema at runtime, so day 0 and day 2000 were measured
+between different pairs of wavelengths; a change in a cell then mixed a change
+in the spectrum with a change in where the code looked.
 
 Positive means the eruption DEEPENED the feature; negative that the sulfate
 aerosol's raised continuum FLATTENED it. Both are real outcomes, and the
 diverging scale keeps them visibly distinct kinds of event.
 
-Why amplitude and not a difference spectrum: a raised continuum lifts every
+Why band depth and not a difference spectrum: a raised continuum lifts every
 point in a band, so depth(t) - depth(0) returns its LARGEST values exactly
 where the aerosol is erasing the feature. Amplitude asks how far a band's core
 sits below its own wings, which is what detectability follows. This is the
@@ -150,10 +157,10 @@ cb.ax.text(0.5, 0.985, 'deepened', transform=cb.ax.transAxes, ha='center',
 cb.ax.text(0.5, 0.015, 'flattened', transform=cb.ax.transAxes, ha='center',
            va='bottom', fontsize=7, rotation=90)
 
-_sub = ('change in band amplitude, peak-to-trough'
-        if not SCOL else
-        'top: change in band amplitude   (bottom): '
-        + cfg.get('secondary_label', SCOL))
+_sub = cfg.get('subtitle', 'change in band depth at fixed wavelengths')
+if SCOL:
+    _sub = ('top: ' + _sub + '   (bottom): '
+            + cfg.get('secondary_label', SCOL))
 ax.set_title('Spectral feature response to the eruption\n' + _sub
              + '  [ppm, R = 250]', fontsize=9.5, pad=10)
 
