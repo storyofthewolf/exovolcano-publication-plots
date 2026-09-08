@@ -22,7 +22,7 @@
 #     value  = amp(t*) - amp(0)   at whichever t* gives the larger excursion
 #
 # Positive means the eruption deepened the feature, negative that the aerosol
-# continuum flattened it. Measured range -37.8 to +66.6 ppm.
+# continuum flattened it.
 #
 # Bands are the five defensible ones from exovolcano-spectra's
 # feature_table_clean.py, with edges from measured species footprints. Gas
@@ -63,6 +63,9 @@ atmospheres: [ben1, ben2, hab1, hab2]
 atm_labels: {ben1: ben1, ben2: ben2, hab1: hab1, hab2: hab2}
 rungs: [1, 10, 100]
 
+# H2O 6.3's core is located PER ATMOSPHERE by attribution to the water ladder
+# (see exovolcano-spectra/notes/H2O_63_MEASUREMENT_PROBLEM.md). The other four
+# cores are fixed wavelengths shared by every atmosphere.
 bands:
   - {band: "SO2 7.3",  label: "SO$_2$ 7.3"}
   - {band: "SO2 8.7",  label: "SO$_2$ 8.7"}
@@ -76,8 +79,9 @@ figsize: [7.4, 9.0]
 # reading: muting and enhancement are both physical outcomes. Symmetric +/-70
 # covers the measured -37.8..+66.6 without letting one outlier set the scale.
 cmap: PuOr_r
-# Measured range -50.6 to +94.1 ppm.
-vlim: 95.0
-subtitle: "change in band depth at fixed wavelengths"
+# Measured range -49.8 to +96.1 ppm (2026-09-08, after the H2O 6.3
+# core was relocated by attribution).
+vlim: 97.0
+subtitle: "change in band depth, $R = 100$"
 annotate: true
 outfile: fig_feature_summary
